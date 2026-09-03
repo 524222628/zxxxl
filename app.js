@@ -158,6 +158,13 @@ function bindDynamicEvents() {
     dialog.showModal();
   };
   document.querySelector('#close-phone-preview').onclick = () => document.querySelector('#phone-preview-dialog').close();
+  document.querySelector('#close-map-lightbox').onclick = () => document.querySelector('#map-lightbox').close();
+  document.querySelectorAll('.map-image-button').forEach((button) => button.onclick = () => {
+    const image = document.querySelector('#map-lightbox-image');
+    image.src = button.dataset.image;
+    image.alt = button.dataset.alt || '放大后的交通路线图';
+    document.querySelector('#map-lightbox').showModal();
+  });
   const dayNav = document.querySelector('.day-nav');
   if (dayNav) {
     let startX = 0;
@@ -165,6 +172,8 @@ function bindDynamicEvents() {
     let dragged = false;
     dayNav.addEventListener('pointerdown', (event) => {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
+      // 鼠标轻点日期必须保留原生链接跳转；触屏使用浏览器的横向手势滚动。
+      if (event.pointerType === 'mouse') return;
       startX = event.clientX;
       startScroll = dayNav.scrollLeft;
       dragged = false;
@@ -241,6 +250,18 @@ function render() {
   bindDynamicEvents();
   const focused = currentBlock();
   if (focused) requestAnimationFrame(() => document.getElementById(focused.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
+
+// 路线页使用用户提供的高清图，点击卡片即可在灯箱中查看细节。
+function transitMapCard({ city, subtitle, officialUrl, notes }) {
+  const imageUrl = city.includes('大阪') ? './assets/osaka-metro.jpg' : './assets/kyoto-railway.jpg';
+  return `<article class="network-map-card"><div class="network-map-heading"><div><p class="kicker">高清路线图</p><h2>${city}</h2><p>${subtitle}</p></div><a class="button button-primary" href="${officialUrl}" target="_blank" rel="noopener">官方信息</a></div><button class="map-image-button" data-image="${imageUrl}" data-alt="${city}高清路线图"><img src="${imageUrl}" alt="${city}高清路线图" loading="lazy"><span>点击放大查看</span></button><div class="network-notes">${notes.map((note) => `<p>${note}</p>`).join('')}</div></article>`;
+}
+
+function transitHtml() {
+  const osaka = { city: '大阪地铁', subtitle: '大阪 Metro 全线与 New Tram 路网', officialUrl: 'https://subway.osakametro.co.jp/guide/routemap.php', notes: ['常用：御堂筋线淀屋桥 M17、难波 M20。', '图中可直接查找线路颜色、站号与换乘关系。', '点击图片放大，手机可双指缩放。'] };
+  const kyoto = { city: '京都铁路与地铁', subtitle: '京都市营地铁、私铁与主要观光线路', officialUrl: 'https://www.city.kyoto.lg.jp/kotsu/page/0000019770.html', notes: ['常用：京都站、四条、乌丸御池与宇治方向。', '图中保留线路编号与换乘站，适合现场核对。', '点击图片放大，手机可双指缩放。'] };
+  return `<section class="transit-hero"><p class="kicker">独立导航页</p><h1>路线先看全图，再走当日。</h1><p>使用高清线路图快速确认颜色、站号与换乘关系；行程卡中的路线示意仍以运营方当天信息为准。</p></section><section class="transit-guide"><div><p class="kicker">本次最常用的换乘</p><h2>三个关键枢纽</h2></div><ol><li><b>淀屋桥 M17</b><span>大阪住宿基点，御堂筋线连接梅田、心斋桥、难波。</span></li><li><b>京都站 K11</b><span>京都到机场 HARUKA、JR 与地铁的重要交汇点。</span></li><li><b>乌丸御池 K08 / T13</b><span>烏丸线与东西线换乘点，前往二条城方向时实用。</span></li></ol></section><section class="network-map-list">${transitMapCard(osaka)}${transitMapCard(kyoto)}</section>`;
 }
 
 window.addEventListener('hashchange', render);
