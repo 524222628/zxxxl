@@ -68,6 +68,8 @@ a,button,img{-webkit-user-drag:none;user-drag:none}
 .map-zoom-tools{position:absolute;z-index:2;top:10px;left:14px;display:flex;gap:6px}.map-zoom-tools button{min-width:36px;height:32px;border:1px solid rgba(255,255,255,.4);border-radius:7px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
 @media(max-width:720px){
   .map-panel{height:220px}.map-card .map-panel{height:220px}
+  .timeline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:visible;padding:0 2px 2px}
+  .timeline a{min-width:0;min-height:72px;padding:9px 8px;overflow-wrap:anywhere}
   .map-image-button img,.map-pdf{height:360px;min-height:360px;object-fit:contain}
   .network-map-card{border-radius:12px}.network-map-heading{padding:16px}.network-map-heading h2{font-size:22px}.network-map-heading p:last-child{font-size:14px}
   .network-notes p{padding:12px 14px;font-size:13px;line-height:1.55}
