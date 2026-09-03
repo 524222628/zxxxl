@@ -50,8 +50,9 @@ function mapHtml(day) {
   const source = `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=13&output=embed`;
   return `<div class="map-panel"><iframe title="${escapeHtml(focus ? focus.title : day.title)}地图" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${source}"></iframe></div>`;
 }
-function guideFor(block) {
-  const common = `<section class="guide-section"><p class="guide-label">本段目标</p><p>${escapeHtml(block.description)}</p></section><section class="guide-section"><p class="guide-label">行动清单</p><p>${escapeHtml(block.action)}</p></section>`;
+function guideFor(day, block) {
+  const isFirstStop = day.blocks[0]?.id === block.id;
+  const preflight = isFirstStop ? `<section class="guide-section guide-preflight"><p class="guide-label">出发前再检查</p><p>交通班次、票价、营业时间、预约结果与天气。把变动直接写进对应行程卡，避免出发当天反复翻找不同来源。</p></section>` : '';
   const byType = {
     '交通': `<section class="guide-section"><p class="guide-label">换乘与时间</p><p>出发前核对站台、线路方向和电子票。到达后先确认下一段的集合点或出口，再决定是否停留购物。</p></section><section class="guide-section"><p class="guide-label">现场判断</p><p>若比计划晚 15 分钟以上，优先保住下一项固定预约；不要用压缩步行缓冲来弥补延误。</p></section>`,
     '航班': `<section class="guide-section"><p class="guide-label">登机前核对</p><p>护照、登机牌、行李重量与充电宝位置应在排队前完成核对。柜台、登机口和托运规则以航空公司当天通知为准。</p></section><section class="guide-section"><p class="guide-label">延误处理</p><p>出现延误时先保留实际时间记录，再将抵达后的弹性项目降级；固定项目冲突需填写覆盖原因。</p></section>`,
@@ -61,7 +62,7 @@ function guideFor(block) {
     '购物': `<section class="guide-section"><p class="guide-label">采购方法</p><p>先按清单购买难替代或易售罄商品，再选择补货。结账前确认免税、保冷、易碎品包装与行李重量。</p></section><section class="guide-section"><p class="guide-label">时间边界</p><p>商店营业时间与库存属于动态信息；接近闭店或下一项固定行程时立即收尾。</p></section>`,
     '休整': `<section class="guide-section"><p class="guide-label">恢复节奏</p><p>补水、整理随身物品并确认次日闹钟。若当日已延误，优先休整而不是把非核心项目塞回晚上。</p></section><section class="guide-section"><p class="guide-label">同行协作</p><p>用这一时段同步照片、伴手礼、预约截图和第二天集合时间，避免在出发时再逐项确认。</p></section>`
   };
-  return `${common}${byType[block.type] || byType['休整']}<section class="guide-section guide-verification"><p class="guide-label">出发前再检查</p><p>交通班次、票价、营业时间、预约结果与天气。把变动直接写进对应行程卡，避免出发当天反复翻找不同来源。</p></section>`;
+  return `${preflight}${byType[block.type] || byType['休整']}`;
 }
 function blockHtml(day, block) {
   const canEdit = Boolean(state.session);
@@ -80,8 +81,9 @@ function transportDiagram(block) {
 function blockHtml(day, block) {
   const canEdit = Boolean(state.session);
   const expanded = state.expanded.has(block.id) || (currentBlock(day)?.id === block.id && !state.collapsed.has(block.id));
+  const sequence = day.blocks.findIndex((item) => item.id === block.id) + 1;
   const risk = block.riskOverride ? `<p class="risk-note critical"><strong>风险覆盖：</strong>${escapeHtml(block.riskOverride)}</p>` : block.risk ? `<p class="risk-note"><strong>风险：</strong>${escapeHtml(block.risk)}。备用：${escapeHtml(block.fallback || '现场确认')}</p>` : '';
-  return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time">${escapeHtml(block.start)}<span>至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}>${transportDiagram(block)}<div class="detail-grid">${guideFor(block)}<aside class="media-slot"><span>图片素材位</span><small>后期人工替换<br>需确认来源与使用权</small></aside></div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}</div></div></article>`;
+  return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time"><span class="block-sequence">行程 ${String(sequence).padStart(2, '0')}</span><strong>${escapeHtml(block.start)}</strong><span class="block-time-end">至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}>${transportDiagram(block)}<div class="detail-grid">${guideFor(day, block)}</div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}</div></div></article>`;
 }
 function dayHtml(day) {
   const index = state.data.days.indexOf(day) + 1;
@@ -282,7 +284,7 @@ function transitHtml() {
 }
 
 function navHtml() {
-  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day">D${index + 1}/${formatDate(day.date)}</span><span><span class="nav-city">${escapeHtml(day.title)}</span><span class="nav-title">${escapeHtml(day.city)}</span></span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
+  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day nav-day-date"><span>D${index + 1}/</span><span>${formatDate(day.date)}</span></span><span class="nav-copy"><span class="nav-city">${escapeHtml(day.title)}</span><span class="nav-title">${escapeHtml(day.city)}</span></span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
 }
 
 window.addEventListener('hashchange', render);

@@ -75,3 +75,51 @@ a,button,img{-webkit-user-drag:none;user-drag:none}
   .network-notes p{padding:12px 14px;font-size:13px;line-height:1.55}
   .map-lightbox-stage img{max-width:none;max-height:none;width:auto;height:auto}
 }
+
+/* v1.1.1：日期列换行与阅读字阶覆盖层。 */
+:root{--font-sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif}
+body{font-family:var(--font-sans);font-size:15px;line-height:1.68;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+.day-header h1,.hero-copy h1{font-weight:800;letter-spacing:-.055em}
+.section-heading h2,.itinerary-title h2,.sidebar h2{font-weight:760;letter-spacing:-.035em}
+.block-heading h3,.block-toggle h3,.day-summary h3{font-weight:720;letter-spacing:-.025em}
+.block-summary,.block-place,.map-card-copy p,.day-summary p,.nav-title{line-height:1.62;color:#587075}
+.timeline a,.block-time,.nav-day,.button{font-weight:700}
+.day-nav a{grid-template-columns:58px minmax(0,1fr);align-items:center;gap:8px}
+.nav-day-date{display:grid;grid-template-rows:repeat(2,auto);align-content:center;white-space:normal;line-height:1.2;font-size:12px;overflow-wrap:anywhere}
+.nav-day-date>span{display:block}.nav-copy{min-width:0}
+.day-nav .nav-city{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.day-nav .nav-title{display:block;margin-top:2px;font-size:12px;overflow-wrap:anywhere}
+@media(max-width:720px){
+  body{font-size:16px;line-height:1.65}
+  .day-nav{gap:7px}
+  .day-nav a{display:grid;grid-template-columns:55px minmax(126px,1fr);min-width:198px;gap:8px;padding:8px 9px}
+  .day-nav .nav-day-date{font-size:12px}
+  .day-nav .nav-city,.day-nav .nav-title{display:block}
+  .day-nav .nav-city{font-size:13px}.day-nav .nav-title{font-size:11px;line-height:1.4}
+  .timeline a{font-size:13px;line-height:1.38}.timeline a strong{font-size:15px}
+  .block-summary,.block-place,.map-card-copy p{font-size:14px}
+}
+
+/* 行程顺序与时间优先级。 */
+.block-time{display:grid;align-content:start;gap:3px;color:var(--accent-deep)}
+.block-sequence{font-size:10px;font-weight:800;letter-spacing:.08em;line-height:1.2;color:#7d5650;text-transform:uppercase}
+.block-time strong{font-size:22px;line-height:1;font-weight:850;letter-spacing:-.05em;color:var(--accent-deep)}
+.block-time .block-time-end{margin:0;color:#617579;font-size:12px;font-weight:700;line-height:1.3}
+.itinerary-block.is-expanded{border-color:#b8d7ca;background:#f4faf6;box-shadow:0 10px 26px rgba(38,83,72,.08)}
+.itinerary-block.is-expanded .block-detail{border-top-color:#c8dfd2}
+@media(max-width:720px){
+  .block-time{display:grid;grid-template-columns:auto 1fr;align-items:baseline;column-gap:7px;row-gap:3px}
+  .block-sequence{grid-column:1 / -1;font-size:10px}
+  .block-time strong{font-size:20px}
+  .block-time .block-time-end{font-size:13px}
+  .itinerary-block.is-expanded{background:#f2f9f5}
+}
+
+/* 展开信息区采用交替浅色，减少同色块密集带来的疲劳。 */
+.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.guide-section{background:#f8faf9;border:1px solid #edf1ee;color:#4b6669}
+.guide-section:nth-child(2n){background:#f3f7fb;border-color:#e3ebf0}
+.guide-section:nth-child(3n){background:#fff9ef;border-color:#f5ead1}
+.guide-section.guide-preflight{background:#edf7f1;border-color:#c8dfd0}
+.guide-section.guide-preflight .guide-label{color:#356d59}
+@media(max-width:720px){.detail-grid{grid-template-columns:1fr}.guide-section{padding:13px}.guide-section:nth-child(2n),.guide-section:nth-child(3n){background:#f8faf9}.guide-section.guide-preflight{background:#edf7f1}}
