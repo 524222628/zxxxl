@@ -8,6 +8,8 @@ a,button,img{-webkit-user-drag:none;user-drag:none}
 .map-preview-with-pdf{position:relative;background:#edf2ef}.map-preview-with-pdf .map-image-button img{height:min(72vh,780px)}
 @media(max-width:720px){#mobile-preview{display:none}}
 @media(min-width:721px){.day-nav a{grid-template-columns:43px 1fr;align-items:center}.day-nav .nav-city{font-size:13px}}
+.day-nav .nav-day{white-space:nowrap;font-size:12px}.day-nav .nav-title{font-size:12px;color:var(--muted);font-weight:500;display:block}
+@media(max-width:720px){.day-nav a{display:grid;grid-template-columns:auto 1fr;min-width:148px;gap:8px;text-align:left;align-items:center}.day-nav .nav-city,.day-nav .nav-title{display:block}.day-nav .nav-title{font-size:11px}}
 @media(max-width:720px){.map-image-button img{height:56vh;min-height:300px}.map-image-button span{right:10px;bottom:10px}.map-pdf{height:56vh;min-height:360px}.map-lightbox{width:calc(100vw - 12px);height:calc(100dvh - 12px);padding:28px 4px 4px;border-radius:10px}}
 
 .mobile-map-card{display:none}

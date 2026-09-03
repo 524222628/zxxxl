@@ -282,7 +282,7 @@ function transitHtml() {
 }
 
 function navHtml() {
-  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day">D${index + 1}</span><span class="nav-city">${formatDate(day.date)}</span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
+  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day">D${index + 1}/${formatDate(day.date)}</span><span><span class="nav-city">${escapeHtml(day.title)}</span><span class="nav-title">${escapeHtml(day.city)}</span></span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
 }
 
 window.addEventListener('hashchange', render);
