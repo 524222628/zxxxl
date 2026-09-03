@@ -7,6 +7,7 @@ a,button,img{-webkit-user-drag:none;user-drag:none}
 .map-pdf-wrap{position:relative;background:#edf2ef}.map-pdf{display:block;width:100%;height:min(72vh,780px);border:0}.map-pdf-open{position:absolute;right:14px;bottom:14px;padding:7px 11px;border-radius:999px;background:rgba(16,44,49,.9);color:#fff;font-size:12px;text-decoration:none}
 .map-preview-with-pdf{position:relative;background:#edf2ef}.map-preview-with-pdf .map-image-button img{height:min(72vh,780px)}
 @media(max-width:720px){#mobile-preview{display:none}}
+@media(min-width:721px){.day-nav a{grid-template-columns:43px 1fr;align-items:center}.day-nav .nav-city{font-size:13px}}
 @media(max-width:720px){.map-image-button img{height:56vh;min-height:300px}.map-image-button span{right:10px;bottom:10px}.map-pdf{height:56vh;min-height:360px}.map-lightbox{width:calc(100vw - 12px);height:calc(100dvh - 12px);padding:28px 4px 4px;border-radius:10px}}
 
 .mobile-map-card{display:none}

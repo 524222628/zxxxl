@@ -266,6 +266,10 @@ function transitHtml() {
   return `<section class="transit-hero"><p class="kicker">独立导航页</p><h1>路线先看全图，再走当日。</h1><p>使用高清线路图快速确认颜色、站号与换乘关系；行程卡中的路线示意仍以运营方当天信息为准。</p></section><section class="transit-guide"><div><p class="kicker">本次最常用的换乘</p><h2>三个关键枢纽</h2></div><ol><li><b>淀屋桥 M17</b><span>大阪住宿基点，御堂筋线连接梅田、心斋桥、难波。</span></li><li><b>京都站 K11</b><span>京都到机场 HARUKA、JR 与地铁的重要交汇点。</span></li><li><b>乌丸御池 K08 / T13</b><span>烏丸线与东西线换乘点，前往二条城方向时实用。</span></li></ol></section><section class="network-map-list">${transitMapCard(osaka)}${transitMapCard(kyoto)}</section>`;
 }
 
+function navHtml() {
+  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day">D${index + 1}</span><span class="nav-city">${formatDate(day.date)}</span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
+}
+
 window.addEventListener('hashchange', render);
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
   const updates = new EventSource('/api/events');
