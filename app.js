@@ -254,8 +254,10 @@ function render() {
 
 // 路线页使用用户提供的高清图，点击卡片即可在灯箱中查看细节。
 function transitMapCard({ city, subtitle, officialUrl, notes }) {
-  const imageUrl = city.includes('大阪') ? './assets/osaka-metro.jpg' : './assets/kyoto-railway.jpg';
-  return `<article class="network-map-card"><div class="network-map-heading"><div><p class="kicker">高清路线图</p><h2>${city}</h2><p>${subtitle}</p></div><a class="button button-primary" href="${officialUrl}" target="_blank" rel="noopener">官方信息</a></div><button class="map-image-button" data-image="${imageUrl}" data-alt="${city}高清路线图"><img src="${imageUrl}" alt="${city}高清路线图" loading="lazy"><span>点击放大查看</span></button><div class="network-notes">${notes.map((note) => `<p>${note}</p>`).join('')}</div></article>`;
+  const isOsaka = city.includes('大阪');
+  const imageUrl = isOsaka ? './assets/osaka-metro.jpg' : './assets/kyoto-railway.jpg';
+  const mapVisual = isOsaka ? `<div class="map-pdf-wrap"><iframe class="map-pdf" src="./assets/osaka-metro.pdf#view=FitH" title="${city}高清路线图"></iframe><a class="map-pdf-open" href="./assets/osaka-metro.pdf" target="_blank" rel="noopener">点击打开并放大 PDF</a></div>` : `<button class="map-image-button" data-image="${imageUrl}" data-alt="${city}高清路线图"><img src="${imageUrl}" alt="${city}高清路线图" loading="lazy"><span>点击放大查看</span></button>`;
+  return `<article class="network-map-card"><div class="network-map-heading"><div><p class="kicker">高清路线图</p><h2>${city}</h2><p>${subtitle}</p></div><a class="button button-primary" href="${officialUrl}" target="_blank" rel="noopener">官方信息</a></div>${mapVisual}<div class="network-notes">${notes.map((note) => `<p>${note}</p>`).join('')}</div></article>`;
 }
 
 function transitHtml() {
