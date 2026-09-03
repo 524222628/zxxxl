@@ -134,3 +134,9 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.68;text-rendering
   .guide-section.guide-preflight{background:#eaf5ef}
   .itinerary-block.is-expanded{background:#e6f1eb}
 }
+
+/* 地点是定位信息，行动提示则以低饱和强调线区分。 */
+.block-place{color:#62777b;font-weight:600;letter-spacing:.01em}
+.block-summary{padding-left:10px;border-left:2px solid #9cc5b2;color:#3e6864;font-weight:520}
+.route-stop b{display:grid;gap:2px}.route-stop b>span{font-weight:800}.route-stop b small{color:#637a79;font-size:10px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+@media(max-width:720px){.block-summary{font-size:14px}.route-stop b small{font-size:9px}.route-stop{min-width:104px}}

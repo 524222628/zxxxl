@@ -70,11 +70,37 @@ function blockHtml(day, block) {
   const risk = block.riskOverride ? `<p class="risk-note critical"><strong>风险覆盖：</strong>${escapeHtml(block.riskOverride)}</p>` : block.risk ? `<p class="risk-note"><strong>风险：</strong>${escapeHtml(block.risk)}。备用：${escapeHtml(block.fallback || '现场确认')}</p>` : '';
   return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time">${escapeHtml(block.start)}<span>至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}><div class="detail-grid">${guideFor(block)}<aside class="media-slot"><span>图片素材位</span><small>后期人工替换<br>需确认来源与使用权</small></aside></div><div class="detail-row"><span class="detail-chip">${escapeHtml(block.type)}</span><span class="detail-chip">${escapeHtml(block.transport || '现场步行')}</span><span class="detail-chip">${escapeHtml(block.cost || '费用待定')}</span>${block.fixed ? '<span class="detail-chip">固定项目</span>' : '<span class="detail-chip">可调整</span>'}</div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}</div></div></article>`;
 }
+const localStopNames = {
+  '皇岗口岸': '皇崗口岸 · Huanggang Port',
+  '香港国际机场': '香港國際機場 · Hong Kong International Airport',
+  '关西机场': '関西空港 · Kansai Airport',
+  '关西国际机场': '関西国際空港 · Kansai International Airport',
+  '难波': '難波（なんば）· Namba',
+  '淀屋桥': '淀屋橋（よどやばし）· Yodoyabashi',
+  '环球城站': 'ユニバーサルシティ駅 · Universal City',
+  '梅田': '梅田（うめだ）· Umeda',
+  '三之宫': '三ノ宮（さんのみや）· Sannomiya',
+  '神户站 / 三宫': '神戸・三ノ宮 · Kobe / Sannomiya',
+  '中书岛': '中書島（ちゅうしょじま）· Chushojima',
+  '宇治': '宇治（うじ）· Uji',
+  '奈良': '奈良（なら）· Nara',
+  '近铁奈良': '近鉄奈良（きんてつなら）· Kintetsu-Nara',
+  '大阪站 / 梅田': '大阪・梅田 · Osaka / Umeda',
+  '京都': '京都（きょうと）· Kyoto',
+  '京都四条大宫': '四条大宮（しじょうおおみや）· Shijo-Omiya',
+  '岚山': '嵐山（あらしやま）· Arashiyama',
+  '御宿野乃 京都七条': '御宿 野乃 京都七条 · Onyado Nono Kyoto Shichijo',
+  '京都站': '京都駅（きょうとえき）· Kyoto Station'
+};
+function stopLabel(stop) {
+  const localName = localStopNames[stop] || stop;
+  return `<b><span>${escapeHtml(stop)}</span><small>${escapeHtml(localName)}</small></b>`;
+}
 function transportDiagram(block) {
   if (block.type !== '交通') return '';
   const stops = block.place.split('→').map((stop) => stop.trim()).filter(Boolean);
   if (stops.length < 2) return '';
-  const nodes = stops.map((stop, index) => `${index ? '<span class="route-connector" aria-hidden="true"></span>' : ''}<span class="route-stop ${index === 0 ? 'route-origin' : index === stops.length - 1 ? 'route-destination' : ''}"><i></i><b>${escapeHtml(stop)}</b></span>`).join('');
+  const nodes = stops.map((stop, index) => `${index ? '<span class="route-connector" aria-hidden="true"></span>' : ''}<span class="route-stop ${index === 0 ? 'route-origin' : index === stops.length - 1 ? 'route-destination' : ''}"><i></i>${stopLabel(stop)}</span>`).join('');
   const transferSteps = stops.slice(1, -1).map((stop) => `<li><b>在「${escapeHtml(stop)}」换乘</b><span>下车后先看站内换乘标识；除非电子屏或站员明确提示，不要出闸。确认下一班车终点包含「${escapeHtml(stops.at(-1))}」方向后再上车。</span></li>`).join('');
   return `<figure class="transit-route"><figcaption><span>本次交通线路</span><strong>${escapeHtml(block.transport || '交通方式待核验')}</strong></figcaption><div class="route-track">${nodes}</div><ol class="ride-steps"><li><b>从「${escapeHtml(stops[0])}」进站</b><span>寻找「${escapeHtml(block.transport || '铁路 / 地铁')}」标识，用 ICOCA / Suica 或单程票刷闸。先看电子屏确认列车终点和发车时间。</span></li><li><b>上车后盯住站名</b><span>车内屏幕、车门上方路线图和站牌都会显示下一站。不要只凭颜色判断方向；听到站名后再准备下车。</span></li>${transferSteps}<li><b>抵达「${escapeHtml(stops.at(-1))}」</b><span>出闸前先打开地图确认出口与步行方向；若时间紧，优先按站内「出口」标识离站，不在闸机附近整理行李。</span></li></ol><p><b>${escapeHtml(block.start)} - ${escapeHtml(block.end)}</b> 是本段预留时间。此图为行程示意，站台、终点站显示、换乘与班次以当天电子屏和运营方信息为准。</p></figure>`;
 }
