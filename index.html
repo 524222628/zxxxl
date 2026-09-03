@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#123c42">
   <meta name="description" content="2026 日本关西八日互动行程">
   <title>关西，八日慢行</title>
@@ -59,7 +59,7 @@
     <div class="phone-preview-toolbar"><strong>手机端预览 · 390px</strong><button class="button button-quiet" id="close-phone-preview" type="button">关闭</button></div>
     <div class="phone-preview-frame"><iframe id="phone-preview-frame" title="手机端行程预览"></iframe></div>
   </dialog>
-  <dialog class="map-lightbox" id="map-lightbox" aria-label="放大路线图"><button class="map-lightbox-close" id="close-map-lightbox" type="button" aria-label="关闭路线图">×</button><img id="map-lightbox-image" alt="放大后的交通路线图"></dialog>
+  <dialog class="map-lightbox" id="map-lightbox" aria-label="放大路线图"><button class="map-lightbox-close" id="close-map-lightbox" type="button" aria-label="关闭路线图">×</button><div class="map-zoom-tools"><button id="map-zoom-out" type="button" aria-label="缩小">−</button><button id="map-zoom-reset" type="button">复位</button><button id="map-zoom-in" type="button" aria-label="放大">＋</button></div><div class="map-lightbox-stage"><img id="map-lightbox-image" alt="放大后的交通路线图"></div></dialog>
   <script src="app.js"></script>
 </body>
 </html>

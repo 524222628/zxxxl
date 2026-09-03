@@ -159,10 +159,25 @@ function bindDynamicEvents() {
   };
   document.querySelector('#close-phone-preview').onclick = () => document.querySelector('#phone-preview-dialog').close();
   document.querySelector('#close-map-lightbox').onclick = () => document.querySelector('#map-lightbox').close();
+  const lightbox = document.querySelector('#map-lightbox');
+  const lightboxImage = document.querySelector('#map-lightbox-image');
+  let zoomScale = 1;
+  let pinchStartDistance = 0;
+  const applyZoom = () => { lightboxImage.style.transform = `scale(${zoomScale})`; lightboxImage.style.cursor = zoomScale > 1 ? 'zoom-out' : 'zoom-in'; };
+  const setZoom = (next) => { zoomScale = Math.min(4, Math.max(1, next)); applyZoom(); };
+  document.querySelector('#map-zoom-in').onclick = () => setZoom(zoomScale + .25);
+  document.querySelector('#map-zoom-out').onclick = () => setZoom(zoomScale - .25);
+  document.querySelector('#map-zoom-reset').onclick = () => setZoom(1);
+  lightboxImage.onwheel = (event) => { event.preventDefault(); setZoom(zoomScale + (event.deltaY < 0 ? .2 : -.2)); };
+  lightboxImage.ontouchstart = (event) => { if (event.touches.length === 2) { const [a,b] = event.touches; pinchStartDistance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); } };
+  lightboxImage.ontouchmove = (event) => { if (event.touches.length !== 2 || !pinchStartDistance) return; event.preventDefault(); const [a,b] = event.touches; const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); setZoom(zoomScale * distance / pinchStartDistance); pinchStartDistance = distance; };
+  lightboxImage.ontouchend = () => { pinchStartDistance = 0; };
   document.querySelectorAll('.map-image-button').forEach((button) => button.onclick = () => {
     const image = document.querySelector('#map-lightbox-image');
     image.src = button.dataset.image;
     image.alt = button.dataset.alt || '放大后的交通路线图';
+    zoomScale = 1;
+    applyZoom();
     document.querySelector('#map-lightbox').showModal();
   });
   const dayNav = document.querySelector('.day-nav');
