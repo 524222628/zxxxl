@@ -19,7 +19,16 @@ async function api(path, options = {}) {
 }
 async function loadData(silent = false) {
   try { state.data = await api('/api/itinerary'); render(); }
-  catch (error) { if (!silent) app.innerHTML = `<section class="map-fallback"><h3>无法连接行程服务</h3><p>${escapeHtml(error.message)}。请运行 <code>npm start</code> 后刷新页面。</p></section>`; }
+  catch (apiError) {
+    try {
+      // GitHub Pages 等静态环境没有 Node 接口时，直接读取随版本发布的公开行程数据。
+      const response = await fetch('./data/itinerary.json');
+      if (!response.ok) throw apiError;
+      state.data = await response.json();
+      render();
+    }
+    catch (error) { if (!silent) app.innerHTML = `<section class="map-fallback"><h3>无法读取行程数据</h3><p>${escapeHtml(error.message)}。请稍后刷新页面。</p></section>`; }
+  }
 }
 function showToast(message, isError = false) { toast.textContent = message; toast.className = `toast show${isError ? ' error' : ''}`; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { toast.className = 'toast'; }, 3000); }
 function routeParts() { return location.hash.replace('#', '').split('/').filter(Boolean); }
@@ -235,6 +244,8 @@ function render() {
 }
 
 window.addEventListener('hashchange', render);
-const updates = new EventSource('/api/events');
-updates.addEventListener('itinerary', () => loadData(true));
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+  const updates = new EventSource('/api/events');
+  updates.addEventListener('itinerary', () => loadData(true));
+}
 loadData();
