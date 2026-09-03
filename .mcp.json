@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "google-maps": {
+      "command": "npx",
+      "args": ["-y", "@cablate/mcp-google-map", "--stdio"]
+    }
+  }
+}

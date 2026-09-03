@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123c42">
+  <meta name="description" content="2026 日本关西八日互动行程">
+  <title>关西，八日慢行</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="返回行程总览"><span class="brand-mark">K</span><span>关西，八日慢行</span></a>
+    <div class="header-actions"><span class="session-label">公开阅读版</span><button class="button button-quiet" id="mobile-preview" type="button">手机预览</button></div>
+  </header>
+
+  <main id="app" aria-live="polite">
+    <div class="loading-shell"><span class="loading-line long"></span><span class="loading-line"></span><span class="loading-line"></span></div>
+  </main>
+
+  <dialog id="editor-dialog" class="dialog">
+    <form id="editor-form" method="dialog" class="dialog-body auth-form">
+      <button id="close-editor" type="button" class="dialog-close" aria-label="关闭">×</button>
+      <p class="kicker">仅限同行成员</p><h2>进入编辑模式</h2>
+      <p class="dialog-copy">编辑会立即同步至公开行程，并写入变更记录。</p>
+      <label>邀请码<input id="invite-code" autocomplete="off" placeholder="例如 KIX2026" required></label>
+      <label>你的昵称<input id="nickname" maxlength="16" autocomplete="nickname" placeholder="例如 阿青" required></label>
+      <p id="auth-error" class="form-error" hidden></p>
+      <button class="button button-primary button-wide" value="default">验证并进入</button>
+      <p class="fine-print">开发演示邀请码：KIX2026。正式部署前请在服务环境变量中替换。</p>
+    </form>
+  </dialog>
+
+  <dialog id="block-dialog" class="dialog dialog-large">
+    <form id="block-form" method="dialog" class="dialog-body">
+      <button id="close-block" type="button" class="dialog-close" aria-label="关闭">×</button>
+      <p class="kicker">编辑行程卡</p><h2 id="block-dialog-title">调整安排</h2>
+      <div class="form-grid">
+        <label>开始时间<input name="start" type="time" required></label>
+        <label>结束时间<input name="end" type="time" required></label>
+        <label class="span-2">行程名称<input name="title" required></label>
+        <label class="span-2">地点<input name="place" required></label>
+        <label>状态<select name="status"><option>已确认</option><option>待核验</option><option>待预约</option><option>待购买</option><option>备选</option><option>取消</option></select></label>
+        <label>交通方式<input name="transport"></label>
+        <label class="span-2">行动步骤<textarea name="action" rows="3"></textarea></label>
+        <label class="span-2">冲突覆盖理由（仅在系统提示严重冲突时必填）<textarea name="overrideReason" rows="2" placeholder="例如：航班延误，保留实际到达记录"></textarea></label>
+      </div>
+      <p id="block-error" class="form-error" hidden></p>
+      <div class="dialog-footer"><button value="cancel" class="button button-quiet">取消</button><button id="save-block" value="default" class="button button-primary">保存修改</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="history-dialog" class="dialog dialog-large">
+    <section class="dialog-body"><button class="dialog-close" id="close-history" aria-label="关闭">×</button><p class="kicker">共享协作</p><h2>变更记录</h2><div id="history-list" class="history-list"></div></section>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <dialog class="phone-preview-dialog" id="phone-preview-dialog" aria-label="手机端预览">
+    <div class="phone-preview-toolbar"><strong>手机端预览 · 390px</strong><button class="button button-quiet" id="close-phone-preview" type="button">关闭</button></div>
+    <div class="phone-preview-frame"><iframe id="phone-preview-frame" title="手机端行程预览"></iframe></div>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>
