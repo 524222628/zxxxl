@@ -112,7 +112,8 @@ const server = http.createServer(async (req, res) => {
       addHistory(data, { nickname, action: '恢复历史版本', blockId: log.blockId, blockTitle: found.block.title, before: current, after: log.before, restoredFrom: logId }); writeData(data); broadcastChange();
       return reply(res, 200, safePublicData(data));
     }
-    const requested = url.pathname === '/' ? '/index.html' : url.pathname;
+    const decodedPath = decodeURIComponent(url.pathname);
+    const requested = decodedPath === '/' ? '/index.html' : decodedPath;
     const filePath = path.resolve(ROOT, `.${requested}`);
     if (!filePath.startsWith(ROOT) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) return reply(res, 404, { error: '未找到资源。' });
     res.writeHead(200, { 'Content-Type': MIME_TYPES[path.extname(filePath)] || 'application/octet-stream' }); fs.createReadStream(filePath).pipe(res);

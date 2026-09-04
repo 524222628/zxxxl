@@ -104,12 +104,61 @@ function transportDiagram(block) {
   const transferSteps = stops.slice(1, -1).map((stop) => `<li><b>在「${escapeHtml(stop)}」换乘</b><span>下车后先看站内换乘标识；除非电子屏或站员明确提示，不要出闸。确认下一班车终点包含「${escapeHtml(stops.at(-1))}」方向后再上车。</span></li>`).join('');
   return `<figure class="transit-route"><figcaption><span>本次交通线路</span><strong>${escapeHtml(block.transport || '交通方式待核验')}</strong></figcaption><div class="route-track">${nodes}</div><ol class="ride-steps"><li><b>从「${escapeHtml(stops[0])}」进站</b><span>寻找「${escapeHtml(block.transport || '铁路 / 地铁')}」标识，用 ICOCA / Suica 或单程票刷闸。先看电子屏确认列车终点和发车时间。</span></li><li><b>上车后盯住站名</b><span>车内屏幕、车门上方路线图和站牌都会显示下一站。不要只凭颜色判断方向；听到站名后再准备下车。</span></li>${transferSteps}<li><b>抵达「${escapeHtml(stops.at(-1))}」</b><span>出闸前先打开地图确认出口与步行方向；若时间紧，优先按站内「出口」标识离站，不在闸机附近整理行李。</span></li></ol><p><b>${escapeHtml(block.start)} - ${escapeHtml(block.end)}</b> 是本段预留时间。此图为行程示意，站台、终点站显示、换乘与班次以当天电子屏和运营方信息为准。</p></figure>`;
 }
+
+function numberedPhotos(folder, timestamp, start, end) {
+  return Array.from({ length: end - start + 1 }, (_, offset) => {
+    const fileName = `微信图片_${timestamp}_${start + offset}_3.jpg`;
+    return `./assets/images/${encodeURIComponent(folder)}/${encodeURIComponent(fileName)}`;
+  });
+}
+
+const itineraryPhotos = {
+  'd1-2': numberedPhotos('直达巴士前往香港国际机场', '20260904092455', 80, 85),
+  'd1-5': [
+    ...numberedPhotos('入境后前往淀屋桥', '20260904093435', 87, 95),
+    ...numberedPhotos('入境后前往淀屋桥', '20260904093836', 97, 106),
+    ...numberedPhotos('入境后前往淀屋桥', '20260904094133', 108, 115)
+  ],
+  'd1-6': numberedPhotos('入住与道顿堀轻量散步', '20260904095641', 117, 124),
+  'd2-1': numberedPhotos('前往 Universal Studios Japan', '20260904145434', 136, 141),
+  // 这组照片同时涵盖任天堂与哈利波特园区，依首次进入园区的章节展示一次，避免重复出现。
+  'd2-2': numberedPhotos('超级任天堂世界与哈利波特园区', '20260904100745', 128, 134)
+};
+
+const dailyHighlights = {
+  'day-1': { must: ['关西机场入境动线', '道顿堀戎桥夜景'], food: ['机场内快速简餐', '道顿堀章鱼烧或串炸'] },
+  'day-2': { must: ['超级任天堂世界', '哈利波特园区夜景'], food: ['Amity Landing Restaurant', '黄油啤酒或园区小食'] },
+  'day-3': { must: ['北野异人馆街', '神户港塔与美利坚公园'], food: ['神户牛午餐', '南京町小吃'] },
+  'day-4': { must: ['平等院凤凰堂', '奈良公园与东大寺'], food: ['宇治抹茶甜品', '志津香釜饭'] },
+  'day-5': { must: ['伏见稻荷千本鸟居', '清水寺与二年坂'], food: ['伏见稻荷周边午餐', '祇园或先斗町晚餐'] },
+  'day-6': { must: ['岚山竹林与渡月桥', '金阁寺与二条城'], food: ['岚山当地午餐', '锦市场小食'] },
+  'day-7': { must: ['东本愿寺', '御宿野乃温泉'], food: ['河原町补货小食', '京都站晚餐'] },
+  'day-8': { must: ['京都站出发', 'HARUKA 机场段'], food: ['京都站便当', '关西机场候机餐'] }
+};
+
+function photoFileName(src) {
+  return decodeURIComponent(src.split('/').at(-1) || '行程照片');
+}
+
+function photoStack(block) {
+  const photos = itineraryPhotos[block.id];
+  if (!photos?.length) return '';
+  const previewPhotos = photos.slice(0, 3);
+  return `<section class="photo-stack" aria-label="${escapeHtml(block.title)}的行程照片"><button class="photo-stack-open" type="button" data-gallery-id="${block.id}" aria-label="查看 ${escapeHtml(block.title)} 的 ${photos.length} 张照片"><span class="photo-stack-visual">${previewPhotos.map((src, index) => `<span class="photo-stack-card photo-stack-card-${index + 1}"><img src="${src}" alt="${escapeHtml(block.title)}照片 ${index + 1}" loading="lazy"></span>`).join('')}</span><span class="photo-stack-copy"><strong>查看行程照片</strong><small>${photos.length} 张 · 点击查看全部</small></span></button></section>`;
+}
+
+function dailyHighlightsHtml(day) {
+  const highlights = dailyHighlights[day.id];
+  if (!highlights) return '';
+  const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+  return `<section class="daily-highlights" aria-label="${escapeHtml(day.title)}的推荐"><article><p class="kicker">今日重点</p><h2>必打卡</h2>${list(highlights.must)}</article><article><p class="kicker">沿途补给</p><h2>美食推荐</h2>${list(highlights.food)}</article></section>`;
+}
 function blockHtml(day, block) {
   const canEdit = Boolean(state.session);
   const expanded = state.expanded.has(block.id) || (currentBlock(day)?.id === block.id && !state.collapsed.has(block.id));
   const sequence = day.blocks.findIndex((item) => item.id === block.id) + 1;
   const risk = block.riskOverride ? `<p class="risk-note critical"><strong>风险覆盖：</strong>${escapeHtml(block.riskOverride)}</p>` : block.risk ? `<p class="risk-note"><strong>风险：</strong>${escapeHtml(block.risk)}。备用：${escapeHtml(block.fallback || '现场确认')}</p>` : '';
-  return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time"><span class="block-sequence">行程 ${String(sequence).padStart(2, '0')}</span><strong>${escapeHtml(block.start)}</strong><span class="block-time-end">至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}>${transportDiagram(block)}<div class="detail-grid">${guideFor(day, block)}</div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}</div></div></article>`;
+  return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time"><span class="block-sequence">行程 ${String(sequence).padStart(2, '0')}</span><strong>${escapeHtml(block.start)}</strong><span class="block-time-end">至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}>${transportDiagram(block)}<div class="detail-grid">${guideFor(day, block)}</div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}${photoStack(block)}</div></div></article>`;
 }
 function dayHtml(day) {
   const index = state.data.days.indexOf(day) + 1;
@@ -173,8 +222,7 @@ function dayHtml(day) {
   const mapTitle = focused ? `定位：${escapeHtml(focused.title)}` : '当日点位';
   const mapDescription = focused ? `地图已跟随时间轴定位到 ${escapeHtml(focused.place)}。` : '按卡片顺序查看当天路线。';
   const mapCard = `<aside class="map-card">${mapHtml(day)}<div class="map-card-copy"><h2>${mapTitle}</h2><p>${mapDescription}</p><a href="${mapLink(day, focused)}" target="_blank" rel="noopener">打开 Google Maps</a></div></aside>`;
-  const mobileMap = `<aside class="mobile-map-card"><p>需要导航？</p><strong>${mapTitle}</strong><a href="${mapLink(day, focused)}" target="_blank" rel="noopener">在 Google Maps 中打开</a></aside>`;
-  return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section><section class="day-layout"><div class="timeline-panel"><div class="panel-title"><h2>当天时间轴</h2></div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div>${mapCard}</section><section class="itinerary"><div class="itinerary-title"><div><p class="kicker">完整章节</p><h2>时间留白，路线清楚</h2></div><p>${escapeHtml(day.hotel)}</p></div><div class="block-list" data-day-id="${day.id}">${day.blocks.map((block) => blockHtml(day, block)).join('')}</div>${mobileMap}</section>`;
+  return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section>${dailyHighlightsHtml(day)}<section class="day-layout"><div class="timeline-panel"><div class="panel-title"><h2>当天时间轴</h2></div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div>${mapCard}</section><section class="itinerary"><div class="itinerary-title"><div><p class="kicker">完整章节</p><h2>时间留白，路线清楚</h2></div><p>${escapeHtml(day.hotel)}</p></div><div class="block-list" data-day-id="${day.id}">${day.blocks.map((block) => blockHtml(day, block)).join('')}</div></section>`;
 }
 
 // 公开版仅保留阅读与章节展开；旧的协作代码保留在文件中以兼容既有数据，
@@ -208,6 +256,100 @@ function bindDynamicEvents() {
     applyZoom();
     document.querySelector('#map-lightbox').showModal();
   });
+  const galleryDialog = document.querySelector('#photo-gallery-dialog');
+  const galleryImage = document.querySelector('#photo-gallery-image');
+  const galleryTitle = document.querySelector('#photo-gallery-title');
+  const galleryCaption = document.querySelector('#photo-gallery-caption');
+  const galleryThumbnails = document.querySelector('#photo-gallery-thumbnails');
+  let galleryPhotos = [];
+  let galleryBlockTitle = '';
+  let galleryIndex = 0;
+  let thumbnailOffset = 0;
+  let thumbnailStartX = 0;
+  let thumbnailStartOffset = 0;
+  let thumbnailDragMoved = false;
+  let suppressThumbnailClickUntil = 0;
+  const moveThumbnailTrack = (nextOffset) => {
+    const track = galleryThumbnails.querySelector('.photo-gallery-thumbnail-track');
+    if (!track) return;
+    const minOffset = Math.min(0, galleryThumbnails.clientWidth - track.scrollWidth);
+    thumbnailOffset = Math.min(0, Math.max(minOffset, nextOffset));
+    track.style.transform = `translateX(${thumbnailOffset}px)`;
+  };
+  const showGalleryPhoto = (nextIndex) => {
+    if (!galleryPhotos.length) return;
+    galleryIndex = (nextIndex + galleryPhotos.length) % galleryPhotos.length;
+    galleryImage.src = galleryPhotos[galleryIndex];
+    galleryImage.alt = `${galleryBlockTitle} · 照片 ${galleryIndex + 1}`;
+    galleryCaption.textContent = `${galleryIndex + 1} / ${galleryPhotos.length} · ${photoFileName(galleryPhotos[galleryIndex])}`;
+    galleryThumbnails.querySelectorAll('button').forEach((button, index) => {
+      const active = index === galleryIndex;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-current', active ? 'true' : 'false');
+    });
+  };
+  document.querySelector('#close-photo-gallery').onclick = () => galleryDialog.close();
+  document.querySelector('#photo-gallery-prev').onclick = () => showGalleryPhoto(galleryIndex - 1);
+  document.querySelector('#photo-gallery-next').onclick = () => showGalleryPhoto(galleryIndex + 1);
+  document.querySelectorAll('.photo-stack-open').forEach((button) => button.onclick = () => {
+    const found = findBlock(button.dataset.galleryId);
+    galleryPhotos = itineraryPhotos[button.dataset.galleryId] || [];
+    galleryBlockTitle = found?.block.title || '行程照片';
+    galleryTitle.textContent = galleryBlockTitle;
+    galleryThumbnails.innerHTML = `<div class="photo-gallery-thumbnail-track">${galleryPhotos.map((src, index) => `<button type="button" data-photo-index="${index}" aria-label="查看文件 ${escapeHtml(photoFileName(src))}"><img src="${src}" alt="${escapeHtml(photoFileName(src))}" loading="lazy"></button>`).join('')}</div>`;
+    thumbnailOffset = 0;
+    suppressThumbnailClickUntil = 0;
+    galleryThumbnails.querySelectorAll('button').forEach((thumbnail) => {
+      // 一些移动浏览器会先把焦点交给按钮再派发 click；这里作为同等的单击入口。
+      thumbnail.onfocus = () => setTimeout(() => {
+        if (!galleryThumbnails.classList.contains('is-dragging') && Date.now() >= suppressThumbnailClickUntil) {
+          showGalleryPhoto(Number(thumbnail.dataset.photoIndex));
+        }
+      }, 0);
+    });
+    moveThumbnailTrack(0);
+    showGalleryPhoto(0);
+    galleryDialog.showModal();
+  });
+  galleryThumbnails.onpointerdown = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    thumbnailStartX = event.clientX;
+    thumbnailStartOffset = thumbnailOffset;
+    thumbnailDragMoved = false;
+    galleryThumbnails.classList.add('is-dragging');
+    galleryThumbnails.setPointerCapture(event.pointerId);
+  };
+  galleryThumbnails.onpointermove = (event) => {
+    if (!galleryThumbnails.classList.contains('is-dragging')) return;
+    const distance = event.clientX - thumbnailStartX;
+    if (Math.abs(distance) > 6) thumbnailDragMoved = true;
+    moveThumbnailTrack(thumbnailStartOffset + distance);
+  };
+  const finishThumbnailDrag = (event) => {
+    if (!galleryThumbnails.classList.contains('is-dragging')) return;
+    galleryThumbnails.classList.remove('is-dragging');
+    const moved = thumbnailDragMoved;
+    thumbnailDragMoved = false;
+    if (moved) {
+      // 拖动结束会紧跟一次浏览器 click；仅吞掉这一次，不能影响随后点击缩略图。
+      suppressThumbnailClickUntil = Date.now() + 120;
+      return;
+    }
+    const thumbnail = event?.target?.closest('button[data-photo-index]');
+    if (thumbnail && galleryThumbnails.contains(thumbnail)) showGalleryPhoto(Number(thumbnail.dataset.photoIndex));
+  };
+  galleryThumbnails.addEventListener('click', (event) => {
+    if (Date.now() >= suppressThumbnailClickUntil) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  galleryThumbnails.onclick = (event) => {
+    const thumbnail = event.target.closest('button[data-photo-index]');
+    if (!thumbnail || !galleryThumbnails.contains(thumbnail)) return;
+    showGalleryPhoto(Number(thumbnail.dataset.photoIndex));
+  };
+  galleryThumbnails.onpointerup = finishThumbnailDrag;
+  galleryThumbnails.onpointercancel = finishThumbnailDrag;
   const dayNav = document.querySelector('.day-nav');
   if (dayNav) {
     let startX = 0;
