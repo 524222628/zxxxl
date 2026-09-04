@@ -4,7 +4,7 @@ const blockDialog = document.querySelector('#block-dialog');
 const historyDialog = document.querySelector('#history-dialog');
 const toast = document.querySelector('#toast');
 const sessionKey = 'kansai-editor-session';
-let state = { data: null, session: null, editingId: null, dragId: null, expanded: new Set(), collapsed: new Set() };
+let state = { data: null, session: null, editingId: null, dragId: null, expandedId: null };
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const statusClass = (status) => status === '已确认' ? 'confirmed' : status === '备选' || status === '取消' ? 'option' : 'check';
@@ -18,13 +18,14 @@ async function api(path, options = {}) {
   return payload;
 }
 async function loadData(silent = false) {
-  try { state.data = await api('/api/itinerary'); render(); }
+  try { state.data = await api('/api/itinerary'); state.expandedId ??= currentBlock()?.id || null; render(); }
   catch (apiError) {
     try {
       // GitHub Pages 等静态环境没有 Node 接口时，直接读取随版本发布的公开行程数据。
       const response = await fetch('./data/itinerary.json');
       if (!response.ok) throw apiError;
       state.data = await response.json();
+      state.expandedId ??= currentBlock()?.id || null;
       render();
     }
     catch (error) { if (!silent) app.innerHTML = `<section class="map-fallback"><h3>无法读取行程数据</h3><p>${escapeHtml(error.message)}。请稍后刷新页面。</p></section>`; }
@@ -112,6 +113,22 @@ function numberedPhotos(folder, timestamp, start, end) {
   });
 }
 
+function photoVariant(src, variant) {
+  return src.replace('./assets/images/', `./assets/${variant}/`).replace(/\.jpg$/i, '.webp');
+}
+
+function preloadDayPhotos(dayId) {
+  const day = state.data?.days.find((item) => item.id === dayId);
+  if (!day) return;
+  day.blocks.flatMap((block) => itineraryPhotos[block.id] || []).forEach((src) => {
+    ['photo-thumbs', 'photo-previews'].forEach((variant) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = photoVariant(src, variant);
+    });
+  });
+}
+
 const itineraryPhotos = {
   'd1-2': numberedPhotos('直达巴士前往香港国际机场', '20260904092455', 80, 85),
   'd1-5': [
@@ -144,7 +161,7 @@ function photoStack(block) {
   const photos = itineraryPhotos[block.id];
   if (!photos?.length) return '';
   const previewPhotos = photos.slice(0, 3);
-  return `<section class="photo-stack" aria-label="${escapeHtml(block.title)}的行程照片"><button class="photo-stack-open" type="button" data-gallery-id="${block.id}" aria-label="查看 ${escapeHtml(block.title)} 的 ${photos.length} 张照片"><span class="photo-stack-visual">${previewPhotos.map((src, index) => `<span class="photo-stack-card photo-stack-card-${index + 1}"><img src="${src}" alt="${escapeHtml(block.title)}照片 ${index + 1}" loading="lazy"></span>`).join('')}</span><span class="photo-stack-copy"><strong>查看行程照片</strong><small>${photos.length} 张 · 点击查看全部</small></span></button></section>`;
+  return `<section class="photo-stack" aria-label="${escapeHtml(block.title)}的行程照片"><button class="photo-stack-open" type="button" data-gallery-id="${block.id}" aria-label="查看 ${escapeHtml(block.title)} 的 ${photos.length} 张照片"><span class="photo-stack-visual">${previewPhotos.map((src, index) => `<span class="photo-stack-card photo-stack-card-${index + 1}"><img src="${photoVariant(src, 'photo-thumbs')}" alt="${escapeHtml(block.title)}照片 ${index + 1}" loading="lazy" decoding="async"></span>`).join('')}</span><span class="photo-stack-copy"><strong>查看行程照片</strong><small>${photos.length} 张 · 点击查看全部</small></span></button></section>`;
 }
 
 function dailyHighlightsHtml(day) {
@@ -155,7 +172,7 @@ function dailyHighlightsHtml(day) {
 }
 function blockHtml(day, block) {
   const canEdit = Boolean(state.session);
-  const expanded = state.expanded.has(block.id) || (currentBlock(day)?.id === block.id && !state.collapsed.has(block.id));
+  const expanded = state.expandedId === block.id;
   const sequence = day.blocks.findIndex((item) => item.id === block.id) + 1;
   const risk = block.riskOverride ? `<p class="risk-note critical"><strong>风险覆盖：</strong>${escapeHtml(block.riskOverride)}</p>` : block.risk ? `<p class="risk-note"><strong>风险：</strong>${escapeHtml(block.risk)}。备用：${escapeHtml(block.fallback || '现场确认')}</p>` : '';
   return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time"><span class="block-sequence">行程 ${String(sequence).padStart(2, '0')}</span><strong>${escapeHtml(block.start)}</strong><span class="block-time-end">至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}>${transportDiagram(block)}<div class="detail-grid">${guideFor(day, block)}</div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}${photoStack(block)}</div></div></article>`;
@@ -269,6 +286,7 @@ function bindDynamicEvents() {
   let thumbnailStartOffset = 0;
   let thumbnailDragMoved = false;
   let suppressThumbnailClickUntil = 0;
+  let galleryLoadId = 0;
   const moveThumbnailTrack = (nextOffset) => {
     const track = galleryThumbnails.querySelector('.photo-gallery-thumbnail-track');
     if (!track) return;
@@ -279,9 +297,26 @@ function bindDynamicEvents() {
   const showGalleryPhoto = (nextIndex) => {
     if (!galleryPhotos.length) return;
     galleryIndex = (nextIndex + galleryPhotos.length) % galleryPhotos.length;
-    galleryImage.src = galleryPhotos[galleryIndex];
     galleryImage.alt = `${galleryBlockTitle} · 照片 ${galleryIndex + 1}`;
     galleryCaption.textContent = `${galleryIndex + 1} / ${galleryPhotos.length} · ${photoFileName(galleryPhotos[galleryIndex])}`;
+    const loadId = ++galleryLoadId;
+    const original = galleryPhotos[galleryIndex];
+    galleryImage.classList.add('is-loading-original');
+    galleryImage.src = photoVariant(original, 'photo-previews');
+    const fullImage = new Image();
+    fullImage.decoding = 'async';
+    fullImage.src = original;
+    fullImage.onload = () => {
+      if (loadId !== galleryLoadId) return;
+      galleryImage.src = original;
+      galleryImage.classList.remove('is-loading-original');
+    };
+    [-1, 1].forEach((offset) => {
+      const adjacent = galleryPhotos[(galleryIndex + offset + galleryPhotos.length) % galleryPhotos.length];
+      const preload = new Image();
+      preload.decoding = 'async';
+      preload.src = adjacent;
+    });
     galleryThumbnails.querySelectorAll('button').forEach((button, index) => {
       const active = index === galleryIndex;
       button.classList.toggle('is-active', active);
@@ -296,7 +331,7 @@ function bindDynamicEvents() {
     galleryPhotos = itineraryPhotos[button.dataset.galleryId] || [];
     galleryBlockTitle = found?.block.title || '行程照片';
     galleryTitle.textContent = galleryBlockTitle;
-    galleryThumbnails.innerHTML = `<div class="photo-gallery-thumbnail-track">${galleryPhotos.map((src, index) => `<button type="button" data-photo-index="${index}" aria-label="查看文件 ${escapeHtml(photoFileName(src))}"><img src="${src}" alt="${escapeHtml(photoFileName(src))}" loading="lazy"></button>`).join('')}</div>`;
+    galleryThumbnails.innerHTML = `<div class="photo-gallery-thumbnail-track">${galleryPhotos.map((src, index) => `<button type="button" data-photo-index="${index}" aria-label="查看文件 ${escapeHtml(photoFileName(src))}"><img src="${photoVariant(src, 'photo-thumbs')}" alt="${escapeHtml(photoFileName(src))}" loading="lazy" decoding="async"></button>`).join('')}</div>`;
     thumbnailOffset = 0;
     suppressThumbnailClickUntil = 0;
     galleryThumbnails.querySelectorAll('button').forEach((thumbnail) => {
@@ -350,6 +385,12 @@ function bindDynamicEvents() {
   };
   galleryThumbnails.onpointerup = finishThumbnailDrag;
   galleryThumbnails.onpointercancel = finishThumbnailDrag;
+  document.querySelectorAll('.timeline a').forEach((link) => {
+    link.onclick = (event) => {
+      event.preventDefault();
+      navigateToHash(link.getAttribute('href'), { scrollToBlock: true });
+    };
+  });
   const dayNav = document.querySelector('.day-nav');
   if (dayNav) {
     let startX = 0;
@@ -381,6 +422,13 @@ function bindDynamicEvents() {
       dragged = false;
     }, true);
     dayNav.addEventListener('dragstart', (event) => event.preventDefault());
+    dayNav.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        if (dragged) return;
+        event.preventDefault();
+        navigateToHash(link.getAttribute('href'));
+      });
+    });
   }
   const content = document.querySelector('.page-content');
   if (content) {
@@ -416,15 +464,8 @@ function bindDynamicEvents() {
     button.onclick = () => {
       const id = button.dataset.id;
       const expanded = button.getAttribute('aria-expanded') === 'true';
-      if (expanded) {
-        state.expanded.delete(id);
-        state.collapsed.add(id);
-      } else {
-        state.expanded.clear();
-        state.collapsed.clear();
-        state.expanded.add(id);
-      }
-      render();
+      state.expandedId = expanded ? null : id;
+      render({ preserveScroll: true });
     };
   });
 }
@@ -434,16 +475,18 @@ function centerActiveDayNav() {
   const activeItem = dayNav?.querySelector('a.active');
   if (!dayNav || !activeItem || !window.matchMedia('(max-width: 720px)').matches) return;
   const targetLeft = activeItem.offsetLeft - (dayNav.clientWidth - activeItem.offsetWidth) / 2;
-  dayNav.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+  dayNav.scrollLeft = Math.max(0, targetLeft);
 }
 
-function render() {
+function render({ preserveScroll = false, scrollToBlockId = null, resetScroll = false } = {}) {
+  const previousScroll = preserveScroll ? window.scrollY : null;
   const view = isTransitView() ? transitHtml() : currentView() ? dayHtml(currentView()) : overviewHtml();
   app.innerHTML = `<div class="app-shell">${navHtml()}<section class="page-content">${view}</section></div>`;
+  centerActiveDayNav();
   bindDynamicEvents();
-  requestAnimationFrame(centerActiveDayNav);
-  const focused = currentBlock();
-  if (focused) requestAnimationFrame(() => document.getElementById(focused.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  if (resetScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+  if (previousScroll !== null) window.scrollTo({ top: previousScroll, behavior: 'auto' });
+  if (scrollToBlockId) requestAnimationFrame(() => document.getElementById(scrollToBlockId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
 
 // 路线页使用用户提供的高清图，点击卡片即可在灯箱中查看细节。
@@ -464,7 +507,19 @@ function navHtml() {
   return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day nav-day-date"><span>D${index + 1}/</span><span>${formatDate(day.date)}</span></span><span class="nav-copy"><span class="nav-city">${escapeHtml(day.title)}</span><span class="nav-title">${escapeHtml(day.city)}</span></span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
 }
 
-window.addEventListener('hashchange', render);
+function navigateToHash(hash, { scrollToBlock = false } = {}) {
+  if (location.hash !== hash) history.pushState(null, '', hash);
+  preloadDayPhotos(routeParts()[0]);
+  const routedBlock = currentBlock();
+  state.expandedId = routedBlock?.id || null;
+  render({ resetScroll: !scrollToBlock, scrollToBlockId: scrollToBlock ? routedBlock?.id : null });
+}
+
+window.addEventListener('hashchange', () => {
+  const routedBlock = currentBlock();
+  state.expandedId = routedBlock?.id || null;
+  render({ scrollToBlockId: routedBlock?.id || null, resetScroll: !routedBlock });
+});
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
   const updates = new EventSource('/api/events');
   updates.addEventListener('itinerary', () => loadData(true));
