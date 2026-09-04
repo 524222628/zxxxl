@@ -287,10 +287,19 @@ function bindDynamicEvents() {
   });
 }
 
+function centerActiveDayNav() {
+  const dayNav = document.querySelector('.day-nav');
+  const activeItem = dayNav?.querySelector('a.active');
+  if (!dayNav || !activeItem || !window.matchMedia('(max-width: 720px)').matches) return;
+  const targetLeft = activeItem.offsetLeft - (dayNav.clientWidth - activeItem.offsetWidth) / 2;
+  dayNav.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+}
+
 function render() {
   const view = isTransitView() ? transitHtml() : currentView() ? dayHtml(currentView()) : overviewHtml();
   app.innerHTML = `<div class="app-shell">${navHtml()}<section class="page-content">${view}</section></div>`;
   bindDynamicEvents();
+  requestAnimationFrame(centerActiveDayNav);
   const focused = currentBlock();
   if (focused) requestAnimationFrame(() => document.getElementById(focused.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
