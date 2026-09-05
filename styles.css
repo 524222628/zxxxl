@@ -159,9 +159,42 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.68;text-rendering
 .photo-gallery-thumbnails{max-width:100%;margin-top:14px;padding:4px 2px;overflow:hidden;touch-action:pan-y;cursor:grab;user-select:none}.photo-gallery-thumbnails.is-dragging{cursor:grabbing}.photo-gallery-thumbnail-track{display:flex;gap:8px;width:max-content;will-change:transform}.photo-gallery-thumbnails button{flex:0 0 56px;width:56px;height:56px;padding:0;border:2px solid transparent;border-radius:7px;background:#27444a;overflow:hidden;cursor:pointer}.photo-gallery-thumbnails button.is-active{border-color:#f2b9a9}.photo-gallery-thumbnails img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
 @media(max-width:720px){.photo-stack{margin-top:15px;padding-top:14px}.photo-stack-open{gap:12px;min-height:142px}.photo-stack-visual{flex-basis:152px;width:152px;height:128px}.photo-stack-card{width:91px;height:122px}.photo-stack-card-1{left:42px}.photo-stack-card-2{left:62px}.photo-stack-card-3{left:19px}.photo-stack-copy strong{font-size:14px}.photo-stack-copy small{font-size:11px;line-height:1.45}.photo-gallery-dialog{width:calc(100vw - 12px);height:calc(100dvh - 12px);border-radius:12px}.photo-gallery-shell{padding:15px 10px 12px}.photo-gallery-header h2{font-size:18px;margin-bottom:10px}.photo-gallery-stage{grid-template-columns:36px minmax(0,1fr) 36px;gap:5px}.photo-gallery-arrow{width:32px;height:32px;font-size:29px}.photo-gallery-thumbnails button{flex-basis:52px;width:52px;height:52px}}
 
-/* 每天先看两类可执行建议，桌面与手机都保持紧凑的双信息层级。 */
-.daily-highlights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.daily-highlights article{padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.68)}.daily-highlights article:last-child{border-color:#edd8d0;background:#fffaf6}.daily-highlights .kicker{margin:0;color:#6f8582;font-size:10px}.daily-highlights article:last-child .kicker{color:var(--accent-deep)}.daily-highlights h2{margin:3px 0 8px;font-size:18px;letter-spacing:-.03em}.daily-highlights ul{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0;list-style:none}.daily-highlights li{padding:4px 8px;border-radius:999px;background:#edf4f0;color:#315e59;font-size:12px;font-weight:650}.daily-highlights article:last-child li{background:#fff0e7;color:#8e4a36}
-@media(max-width:720px){.daily-highlights{gap:9px;margin-top:12px}.daily-highlights article{padding:13px 12px}.daily-highlights h2{font-size:16px}.daily-highlights ul{display:grid;gap:5px}.daily-highlights li{padding:3px 0;background:transparent!important;font-size:12px;line-height:1.42}.daily-highlights li::before{content:'•';margin-right:5px;color:var(--accent-deep)}}
+/* 每天先看两类可执行建议；默认收起，展开时单栏占满并隐藏另一侧，避免留下空白。 */
+.daily-highlights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.recommendation-panel{min-width:0;padding:0;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.68);overflow:hidden}
+.recommendation-panel:last-child{border-color:#edd8d0;background:#fffaf6}
+.recommendation-panel.is-expanded{grid-column:1 / -1}
+.recommendation-panel[hidden]{display:none}
+.recommendation-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:76px;padding:15px 18px;border:0;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+.recommendation-toggle:hover{background:rgba(237,244,240,.5)}
+.recommendation-toggle:focus-visible{outline:3px solid rgba(216,92,64,.35);outline-offset:-3px}
+.recommendation-toggle-copy{display:grid;gap:3px;min-width:0}
+.recommendation-toggle .kicker{margin:0;color:#6f8582;font-size:10px}
+.recommendation-panel:last-child .recommendation-toggle .kicker{color:var(--accent-deep)}
+.recommendation-toggle-copy strong{font-size:18px;letter-spacing:-.03em}
+.recommendation-toggle-icon{position:relative;flex:0 0 26px;width:26px;height:26px;border:1px solid #9cb6ab;border-radius:50%;color:var(--evergreen)}
+.recommendation-toggle-icon::before,.recommendation-toggle-icon::after{content:"";position:absolute;top:50%;left:50%;width:10px;height:1.5px;background:currentColor;transform:translate(-50%,-50%);transition:transform .18s ease}
+.recommendation-toggle-icon::after{transform:translate(-50%,-50%) rotate(90deg)}
+.recommendation-panel.is-expanded .recommendation-toggle-icon::after{transform:translate(-50%,-50%) rotate(0)}
+.recommendation-content{padding:0 18px 16px}
+.recommendation-panel.is-expanded .recommendation-content{animation:recommendation-content-in .18s ease both}
+@keyframes recommendation-content-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.daily-highlights ul{display:grid;gap:9px;margin:0;padding:0;list-style:none}
+.daily-highlights .recommendation-item{display:grid;gap:3px;padding:9px 10px;border-radius:9px;background:#edf4f0;color:var(--ink);font-size:12px;font-weight:400;line-height:1.45}
+.daily-highlights .recommendation-item::before{display:none}
+.recommendation-panel:last-child .recommendation-item{background:#fff5ed}
+.recommendation-item strong{font-size:13px;color:var(--evergreen)}
+.recommendation-meta{color:var(--accent-deep);font-size:11px;font-weight:700}
+.recommendation-item small{color:var(--muted);font-size:11px;line-height:1.45}
+.recommendation-food-item{grid-template-columns:58px minmax(0,1fr);align-items:start;gap:10px}
+.recommendation-item-copy{display:grid;gap:3px;min-width:0}
+.food-photo-button{width:58px;height:58px;padding:0;border:1px solid rgba(16,44,49,.12);border-radius:8px;background:#dfe9e4;overflow:hidden;cursor:zoom-in}
+.food-photo-button:focus-visible{outline:3px solid rgba(216,92,64,.35);outline-offset:2px}
+.food-photo-button img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .18s ease}
+.food-photo-button:hover img{transform:scale(1.06)}
+.route-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 11px}.route-meta span{display:grid;gap:2px;padding:7px 8px;border-radius:7px;background:#edf4f0;color:#536b6b;font-size:11px;line-height:1.35}.route-meta b{color:var(--evergreen);font-size:10px}.transit-route-detail>.route-meta+ .ride-steps{margin-top:0}
+@media(max-width:720px){.daily-highlights{grid-template-columns:1fr;gap:9px;margin-top:12px}.recommendation-panel.is-expanded{grid-column:auto}.recommendation-toggle{min-height:68px;padding:13px 12px}.recommendation-toggle-copy strong{font-size:16px}.recommendation-content{padding:0 12px 13px}.daily-highlights .recommendation-item{padding:8px 9px}.recommendation-food-item{grid-template-columns:54px minmax(0,1fr);gap:8px}.food-photo-button{width:54px;height:54px}.route-meta{grid-template-columns:1fr;gap:5px}.route-meta span{display:flex;gap:6px;align-items:baseline}}
+@media(prefers-reduced-motion:reduce){.recommendation-toggle-icon::before,.recommendation-toggle-icon::after{transition:none}.recommendation-panel.is-expanded .recommendation-content{animation:none}}
 
 /* 图库先显示轻量预览，原图完成后无感替换。 */
 .photo-gallery-stage img{transition:opacity .16s ease,filter .16s ease}.photo-gallery-stage img.is-loading-original{filter:blur(.45px);opacity:.92}
