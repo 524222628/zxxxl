@@ -9,6 +9,17 @@ let state = { data: null, session: null, editingId: null, dragId: null, selected
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const statusClass = (status) => status === '已确认' ? 'confirmed' : status === '备选' || status === '取消' ? 'option' : 'check';
 const formatDate = (date) => new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(new Date(`${date}T12:00:00`));
+const daySymbols = Object.freeze({
+  'day-1': '🚌',
+  'day-2': '🎢',
+  'day-3': '🗼',
+  'day-4': '🦌',
+  'day-5': '⛩️',
+  'day-6': '🎋',
+  'day-7': '🏮',
+  'day-8': '✈️'
+});
+const daySymbol = (dayId) => daySymbols[dayId] || '🌸';
 const mapLink = (day, block = currentBlock(day)) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block?.place || day.mapQuery)}`;
 
 async function api(path, options = {}) {
@@ -632,8 +643,8 @@ function dailyHighlightsHtml(day) {
   if (!recommendations) return '';
   const buyList = recommendations.mustBuy.map((item) => `<li class="recommendation-item"><strong>${escapeHtml(item.name)}</strong><span class="recommendation-meta">${escapeHtml(item.category)} · ${escapeHtml(item.location)} · ${escapeHtml(item.price)}</span><small>${escapeHtml(item.reason)}${item.note ? ` · ${escapeHtml(item.note)}` : ''}</small></li>`).join('');
   const foodList = recommendations.food.map((item) => `<li class="recommendation-item recommendation-food-item"><button class="food-photo-button" type="button" data-food-image="${escapeHtml(item.image)}" data-food-title="${escapeHtml(item.name)}" aria-label="放大查看 ${escapeHtml(item.name)} 招牌菜照片"><img src="${escapeHtml(photoVariant(item.image, 'photo-thumbs'))}" alt="${escapeHtml(item.name)}的${escapeHtml(item.dish)}缩略图" loading="lazy" decoding="async"></button><span class="recommendation-item-copy"><strong>${escapeHtml(item.name)}</strong><span class="recommendation-meta">${escapeHtml(item.location)} · ${escapeHtml(item.price)}</span><small>招牌：${escapeHtml(item.dish)} · ${escapeHtml(item.note)} · 参考：${escapeHtml(item.source)}</small></span></li>`).join('');
-  const panel = (type, kicker, title, list, contentId) => `<article class="recommendation-panel" data-recommendation-panel="${type}"><button class="recommendation-toggle" type="button" aria-expanded="false" aria-controls="${contentId}"><span class="recommendation-toggle-copy"><span class="kicker">${kicker}</span><strong>${title}</strong></span><span class="recommendation-toggle-icon" aria-hidden="true"></span></button><div id="${contentId}" class="recommendation-content" hidden><ul>${list}</ul></div></article>`;
-  return `<section class="daily-highlights" aria-label="${escapeHtml(day.title)}的购物与美食推荐">${panel('buy', '路线顺手买', '必买清单', buyList, `recommendation-buy-${day.id}`)}${panel('food', '按当日动线', '美食推荐', foodList, `recommendation-food-${day.id}`)}</section>`;
+  const panel = (type, kicker, title, icon, list, contentId) => `<article class="recommendation-panel" data-recommendation-panel="${type}"><button class="recommendation-toggle" type="button" aria-expanded="false" aria-controls="${contentId}"><span class="recommendation-toggle-copy"><span class="kicker">${kicker}</span><strong><span class="recommendation-title-icon" aria-hidden="true">${icon}</span>${title}</strong></span><span class="recommendation-toggle-icon" aria-hidden="true"></span></button><div id="${contentId}" class="recommendation-content" hidden><ul>${list}</ul></div></article>`;
+  return `<section class="daily-highlights" aria-label="${escapeHtml(day.title)}的购物与美食推荐">${panel('buy', '路线顺手买', '必买清单', '🎁', buyList, `recommendation-buy-${day.id}`)}${panel('food', '按当日动线', '美食推荐', '🍜', foodList, `recommendation-food-${day.id}`)}</section>`;
 }
 
 function selectedBlock(day = currentView()) {
@@ -723,7 +734,7 @@ function dayHtml(day) {
   const mapTitle = `定位：${escapeHtml(focused.title)}`;
   const mapDescription = `地图已跟随时间轴定位到 ${escapeHtml(focused.place)}。`;
   const mapCard = `<section class="day-map-bottom"><aside class="map-card">${mapHtml(day, focused)}<div class="map-card-copy"><h2>${mapTitle}</h2><p>${mapDescription}</p><a href="${mapLink(day, focused)}" target="_blank" rel="noopener">打开 Google Maps</a></div></aside></section>`;
-  return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section>${dailyPreflightHtml()}${dailyHighlightsHtml(day)}<section class="day-flow"><div class="timeline-panel ${day.blocks.length > 7 ? 'timeline-panel-wide' : ''}"><div class="panel-title"><h2>当天时间轴</h2></div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div></section><section class="itinerary itinerary-single"><div class="block-list" data-day-id="${day.id}">${blockHtml(day, focused)}</div></section>${mapCard}`;
+  return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><span class="day-header-mark" aria-hidden="true">${daySymbol(day.id)}</span><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section>${dailyPreflightHtml()}${dailyHighlightsHtml(day)}<section class="day-flow"><div class="timeline-panel ${day.blocks.length > 7 ? 'timeline-panel-wide' : ''}"><div class="panel-title"><h2>当天时间轴</h2></div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div></section><section class="itinerary itinerary-single"><div class="block-list" data-day-id="${day.id}">${blockHtml(day, focused)}</div></section>${mapCard}`;
 }
 
 // 公开版使用单卡阅读流；旧的协作代码保留在文件中以兼容既有数据，
@@ -738,15 +749,10 @@ function bindDynamicEvents() {
   document.querySelectorAll('.recommendation-toggle').forEach((button) => button.onclick = () => {
     const panel = button.closest('.recommendation-panel');
     const shouldExpand = button.getAttribute('aria-expanded') !== 'true';
-    document.querySelectorAll('.recommendation-panel').forEach((otherPanel) => {
-      const otherButton = otherPanel.querySelector('.recommendation-toggle');
-      const content = otherPanel.querySelector('.recommendation-content');
-      const isExpanded = shouldExpand && otherPanel === panel;
-      otherPanel.hidden = shouldExpand && otherPanel !== panel;
-      otherPanel.classList.toggle('is-expanded', isExpanded);
-      otherButton.setAttribute('aria-expanded', String(isExpanded));
-      content.hidden = !isExpanded;
-    });
+    const content = panel.querySelector('.recommendation-content');
+    panel.classList.toggle('is-expanded', shouldExpand);
+    button.setAttribute('aria-expanded', String(shouldExpand));
+    content.hidden = !shouldExpand;
   });
   document.querySelector('#close-map-lightbox').onclick = () => document.querySelector('#map-lightbox').close();
   const lightbox = document.querySelector('#map-lightbox');
@@ -784,6 +790,7 @@ function bindDynamicEvents() {
   let thumbnailDragMoved = false;
   let suppressThumbnailClickUntil = 0;
   let galleryLoadId = 0;
+  const setGalleryMode = (mode) => galleryDialog.classList.toggle('photo-gallery-dialog-single', mode === 'single');
   const moveThumbnailTrack = (nextOffset) => {
     const track = galleryThumbnails.querySelector('.photo-gallery-thumbnail-track');
     if (!track) return;
@@ -798,6 +805,17 @@ function bindDynamicEvents() {
     galleryCaption.textContent = `${galleryIndex + 1} / ${galleryPhotos.length} · ${photoFileName(galleryPhotos[galleryIndex])}`;
     const loadId = ++galleryLoadId;
     const original = galleryPhotos[galleryIndex];
+    galleryImage.classList.add('is-gallery-switching');
+    galleryImage.removeAttribute('src');
+    galleryImage.onload = () => {
+      if (loadId !== galleryLoadId) return;
+      galleryImage.classList.remove('is-gallery-switching');
+    };
+    galleryImage.onerror = () => {
+      if (loadId !== galleryLoadId) return;
+      galleryImage.classList.remove('is-gallery-switching');
+      galleryImage.classList.remove('is-loading-original');
+    };
     galleryImage.classList.add('is-loading-original');
     galleryImage.src = photoVariant(original, 'photo-previews');
     const fullImage = new Image();
@@ -821,9 +839,11 @@ function bindDynamicEvents() {
     });
   };
   document.querySelector('#close-photo-gallery').onclick = () => galleryDialog.close();
+  galleryDialog.onclose = () => setGalleryMode('multi');
   document.querySelector('#photo-gallery-prev').onclick = () => showGalleryPhoto(galleryIndex - 1);
   document.querySelector('#photo-gallery-next').onclick = () => showGalleryPhoto(galleryIndex + 1);
   document.querySelectorAll('.photo-stack-open').forEach((button) => button.onclick = () => {
+    setGalleryMode('multi');
     const found = findBlock(button.dataset.galleryId);
     galleryPhotos = itineraryPhotos[button.dataset.galleryId] || [];
     galleryBlockTitle = found?.block.title || '行程照片';
@@ -844,10 +864,11 @@ function bindDynamicEvents() {
     galleryDialog.showModal();
   });
   document.querySelectorAll('.food-photo-button').forEach((button) => button.onclick = () => {
+    setGalleryMode('single');
     galleryPhotos = [button.dataset.foodImage];
     galleryBlockTitle = button.dataset.foodTitle || '美食推荐';
     galleryTitle.textContent = galleryBlockTitle;
-    galleryThumbnails.innerHTML = `<div class="photo-gallery-thumbnail-track"><button type="button" class="is-active" aria-current="true" aria-label="查看 ${escapeHtml(galleryBlockTitle)} 招牌菜"><img src="${escapeHtml(photoVariant(button.dataset.foodImage, 'photo-thumbs'))}" alt="${escapeHtml(galleryBlockTitle)}招牌菜缩略图"></button></div>`;
+    galleryThumbnails.innerHTML = '';
     thumbnailOffset = 0;
     suppressThumbnailClickUntil = 0;
     moveThumbnailTrack(0);
@@ -896,7 +917,7 @@ function bindDynamicEvents() {
   document.querySelectorAll('.timeline a').forEach((link) => {
     link.onclick = (event) => {
       event.preventDefault();
-      navigateToHash(link.getAttribute('href'));
+      navigateToHash(link.getAttribute('href'), { scrollToTimeline: true });
     };
   });
   const timeline = document.querySelector('.timeline');
@@ -1024,13 +1045,29 @@ function centerActiveTimelineStep({ behavior = 'auto' } = {}) {
   timeline.scrollTo({ left: Math.max(0, targetLeft), behavior });
 }
 
-function render({ preserveScroll = false, scrollToBlockId = null, resetScroll = false } = {}) {
+function scrollToTimelinePanel() {
+  const panel = document.querySelector('.day-flow .timeline-panel');
+  if (!panel) return;
+  const headerHeight = document.querySelector('.site-header')?.getBoundingClientRect().height || 0;
+  const mobileNavHeight = window.matchMedia('(max-width: 720px)').matches
+    ? document.querySelector('.sidebar')?.getBoundingClientRect().height || 0
+    : 0;
+  const offset = headerHeight + mobileNavHeight + 12;
+  const top = panel.getBoundingClientRect().top + window.scrollY - offset;
+  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  window.scrollTo({ top: Math.max(0, top), behavior });
+}
+
+function render({ preserveScroll = false, scrollToBlockId = null, scrollToTimeline = false, resetScroll = false } = {}) {
   const previousScroll = preserveScroll ? window.scrollY : null;
   const view = isTransitView() ? transitHtml() : currentView() ? dayHtml(currentView()) : overviewHtml();
   app.innerHTML = `<div class="app-shell">${navHtml()}<section class="page-content">${view}</section></div>`;
   centerActiveDayNav();
   bindDynamicEvents();
-  requestAnimationFrame(() => centerActiveTimelineStep({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+  requestAnimationFrame(() => {
+    centerActiveTimelineStep({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (scrollToTimeline) scrollToTimelinePanel();
+  });
   if (resetScroll) window.scrollTo({ top: 0, behavior: 'auto' });
   if (previousScroll !== null) window.scrollTo({ top: previousScroll, behavior: 'auto' });
   if (scrollToBlockId) requestAnimationFrame(() => document.getElementById(scrollToBlockId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -1051,15 +1088,23 @@ function transitHtml() {
 }
 
 function navHtml() {
-  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day nav-day-date"><span>D${index + 1}/</span><span>${formatDate(day.date)}</span></span><span class="nav-copy"><span class="nav-city">${escapeHtml(day.title)}</span><span class="nav-title">${escapeHtml(day.city)}</span></span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
+  return `<aside class="sidebar"><p class="side-label">行程导航</p><h2>八天路线</h2><nav class="day-nav" aria-label="按日期跳转"><a href="#home" class="${!currentView() && !isTransitView() ? 'active' : ''}"><span class="nav-day">总览</span><span class="nav-city">整体日程</span></a><a href="#transit" class="${isTransitView() ? 'active' : ''}"><span class="nav-day">路线</span><span class="nav-city">交通导航</span></a>${state.data.days.map((day, index) => `<a href="#${day.id}" class="${currentView()?.id === day.id ? 'active' : ''}"><span class="nav-day nav-day-date"><span>D${index + 1}/</span><span>${formatDate(day.date)}</span></span><span class="nav-copy"><span class="nav-city"><span class="nav-symbol" aria-hidden="true">${daySymbol(day.id)}</span>${escapeHtml(day.title)}</span><span class="nav-title">${escapeHtml(day.city)}</span></span></a>`).join('')}</nav><p class="side-note">交通图源直接来自运营方。班次、停运与站台以当天官方信息为准。</p></aside>`;
 }
 
-function navigateToHash(hash, { scrollToBlock = false } = {}) {
+function navigateToHash(hash, { scrollToBlock = false, scrollToTimeline = false } = {}) {
+  const previousDayId = currentView()?.id || null;
+  const previousBlockId = selectedBlock()?.id || null;
   if (location.hash !== hash) history.pushState(null, '', hash);
+  const nextDay = currentView();
+  const nextBlock = currentBlock(nextDay) || nextDay?.blocks?.[0] || null;
+  if (previousDayId === nextDay?.id && previousBlockId === nextBlock?.id) {
+    state.selectedBlockId = nextBlock?.id || null;
+    return;
+  }
   preloadDayPhotos(routeParts()[0]);
-  const routedBlock = currentBlock();
+  const routedBlock = currentBlock(nextDay);
   state.selectedBlockId = routedBlock?.id || null;
-  render({ resetScroll: !scrollToBlock, scrollToBlockId: scrollToBlock ? routedBlock?.id : null });
+  render({ resetScroll: !scrollToBlock && !scrollToTimeline, scrollToBlockId: scrollToBlock ? routedBlock?.id : null, scrollToTimeline });
 }
 
 window.addEventListener('hashchange', () => {
