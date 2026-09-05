@@ -204,4 +204,19 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.68;text-rendering
 
 /* 单卡阅读流：时间轴选择一段完整行程，地图收至每日内容末尾。 */
 .day-flow{margin-top:18px}.day-flow .timeline-panel{width:100%}.itinerary-single{margin-top:18px}.itinerary-single .block-list{display:block}.itinerary-single .itinerary-block{width:100%;min-height:0}.itinerary-block.is-current{border-color:#9ec5b5;background:#f3faf6;box-shadow:0 12px 28px rgba(38,83,72,.09)}.itinerary-block.is-current .block-summary{display:block}.itinerary-block.is-current .block-detail{display:block;margin-top:16px;padding-top:16px;border-top:1px solid #c7ddd2}.block-heading-copy{min-width:0}.day-map-bottom{margin-top:18px}.day-map-bottom .map-card{display:block;width:100%}.day-map-bottom .map-card .map-panel{height:330px}.day-map-bottom .map-card-copy{padding:17px 18px}
-@media(max-width:720px){.day-flow{margin-top:12px}.itinerary-single{margin-top:16px}.itinerary-single .itinerary-title{margin-bottom:12px}.itinerary-block.is-current{padding:15px}.itinerary-block.is-current .block-detail{margin-top:14px;padding-top:14px}.day-map-bottom{margin-top:16px}.day-map-bottom .map-card .map-panel{height:220px}.day-map-bottom .map-card-copy{padding:15px 14px}}
+@media(max-width:720px){.day-flow{margin-top:12px}.itinerary-single{margin-top:16px}.itinerary-block.is-current{padding:15px}.itinerary-block.is-current .block-detail{margin-top:14px;padding-top:14px}.day-map-bottom{margin-top:16px}.day-map-bottom .map-card .map-panel{height:220px}.day-map-bottom .map-card-copy{padding:15px 14px}}
+
+/* 交通路线默认只露出站点轨道，详细换乘步骤通过原生 details 展开。 */
+.transit-route{overflow:hidden}
+.transit-route-summary{display:block;position:relative;cursor:pointer;list-style:none;padding:0;color:inherit}
+.transit-route-summary::-webkit-details-marker{display:none}
+.transit-route-summary:focus-visible{outline:3px solid rgba(216,92,64,.34);outline-offset:4px;border-radius:6px}
+.transit-route-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--evergreen);font-size:12px}
+.transit-route-heading>span{font-weight:800}
+.transit-route-heading strong{font-size:11px;text-align:right}
+.transit-route-affordance{display:flex;justify-content:flex-end;margin-top:2px;color:var(--accent-deep);font-size:10px;font-weight:800}
+.transit-route-affordance::before{content:'查看路线';padding:3px 7px;border-radius:999px;background:#fff0e7}
+.transit-route[open] .transit-route-affordance::before{content:'收起路线';background:#e7f1ec;color:var(--evergreen)}
+.transit-route-detail{margin-top:10px;padding-top:10px;border-top:1px solid #d4e2dc}
+.transit-route-summary .route-track{margin-top:2px}
+@media(max-width:720px){.transit-route-heading{display:grid;gap:3px}.transit-route-heading strong{text-align:left}.transit-route-affordance{margin-top:4px}.transit-route-detail{margin-top:8px;padding-top:8px}}
