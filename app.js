@@ -4,7 +4,7 @@ const blockDialog = document.querySelector('#block-dialog');
 const historyDialog = document.querySelector('#history-dialog');
 const toast = document.querySelector('#toast');
 const sessionKey = 'kansai-editor-session';
-let state = { data: null, session: null, editingId: null, dragId: null, expandedId: null };
+let state = { data: null, session: null, editingId: null, dragId: null, selectedBlockId: null };
 
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const statusClass = (status) => status === '已确认' ? 'confirmed' : status === '备选' || status === '取消' ? 'option' : 'check';
@@ -18,14 +18,13 @@ async function api(path, options = {}) {
   return payload;
 }
 async function loadData(silent = false) {
-  try { state.data = await api('/api/itinerary'); state.expandedId ??= currentBlock()?.id || null; render(); }
+  try { state.data = await api('/api/itinerary'); render(); }
   catch (apiError) {
     try {
       // GitHub Pages 等静态环境没有 Node 接口时，直接读取随版本发布的公开行程数据。
       const response = await fetch('./data/itinerary.json');
       if (!response.ok) throw apiError;
       state.data = await response.json();
-      state.expandedId ??= currentBlock()?.id || null;
       render();
     }
     catch (error) { if (!silent) app.innerHTML = `<section class="map-fallback"><h3>无法读取行程数据</h3><p>${escapeHtml(error.message)}。请稍后刷新页面。</p></section>`; }
@@ -45,25 +44,13 @@ function overviewHtml() {
   const flexible = state.data.days.flatMap((day) => day.blocks).filter((block) => !block.fixed).length;
   return `<section class="overview-hero"><div class="hero-copy"><p class="kicker">2026 KANSAI JOURNEY</p><h1>${escapeHtml(state.data.trip.title)}</h1><p>从大阪的抵达到京都的返程。每一天都有主路线，也留了可被现实改变的余地。</p><div class="trip-meta"><span>${escapeHtml(state.data.trip.dates)}</span><span>${escapeHtml(state.data.trip.party)}</span><span>行前信息整理于 ${escapeHtml(state.data.trip.lastVerified)}</span></div></div><div class="hero-image" role="img" aria-label="京都旅行参考图片"></div></section><div class="section-heading"><div><p class="kicker">一眼看清</p><h2>旅行结构</h2></div><p>固定预约优先，弹性安排留给当天的体力和天气。</p></div><section class="overview-grid">${metric('旅行天数', '08')} ${metric('行程节点', String(state.data.days.reduce((sum, day) => sum + day.blocks.length, 0)).padStart(2, '0'))} ${metric('固定节点', String(fixed).padStart(2, '0'))} ${metric('可调整安排', String(flexible).padStart(2, '0'))}</section><div class="section-heading"><div><p class="kicker">按日阅读</p><h2>路线全景</h2></div><p>点击任意一天，查看时间轴与完整章节。</p></div><section class="day-summary-list">${state.data.days.map((day, index) => { const first = day.blocks[0]; const anchor = day.blocks.find((block) => block.fixed) || first; return `<a href="#${day.id}" class="day-summary"><div class="day-summary-top"><span>D${index + 1} · ${formatDate(day.date)} ${day.weekday}</span><span>${escapeHtml(first.start)} 出发</span></div><h3>${escapeHtml(day.title)}</h3><p>${escapeHtml(day.theme)}</p><p class="block-place">关键节点：${escapeHtml(anchor.title)} · ${escapeHtml(day.hotel)}</p></a>`; }).join('')}</section>`;
 }
-function mapHtml(day) {
-  const focus = currentBlock(day);
+function mapHtml(day, focus = currentBlock(day)) {
   const query = focus?.place || day.mapQuery;
   const source = `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=13&output=embed`;
   return `<div class="map-panel"><iframe title="${escapeHtml(focus ? focus.title : day.title)}地图" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${source}"></iframe></div>`;
 }
-function guideFor(day, block) {
-  const isFirstStop = day.blocks[0]?.id === block.id;
-  const preflight = isFirstStop ? `<section class="guide-section guide-preflight"><p class="guide-label">出发前再检查</p><p>交通班次、票价、营业时间、预约结果与天气。把变动直接写进对应行程卡，避免出发当天反复翻找不同来源。</p></section>` : '';
-  const byType = {
-    '交通': `<section class="guide-section"><p class="guide-label">换乘与时间</p><p>出发前核对站台、线路方向和电子票。到达后先确认下一段的集合点或出口，再决定是否停留购物。</p></section><section class="guide-section"><p class="guide-label">现场判断</p><p>若比计划晚 15 分钟以上，优先保住下一项固定预约；不要用压缩步行缓冲来弥补延误。</p></section>`,
-    '航班': `<section class="guide-section"><p class="guide-label">登机前核对</p><p>护照、登机牌、行李重量与充电宝位置应在排队前完成核对。柜台、登机口和托运规则以航空公司当天通知为准。</p></section><section class="guide-section"><p class="guide-label">延误处理</p><p>出现延误时先保留实际时间记录，再将抵达后的弹性项目降级；固定项目冲突需填写覆盖原因。</p></section>`,
-    '景点': `<section class="guide-section"><p class="guide-label">游览顺序</p><p>先处理最晚入场或需预约的区域，再保留自由拍摄与商店浏览时间。尊重禁止拍摄、单行通行和私人区域标识。</p></section><section class="guide-section"><p class="guide-label">拍摄与打卡</p><p>${escapeHtml(block.recommendation)} 现场以不阻塞动线为前提，人物合照安排在主取景点之外完成。</p></section>`,
-    '餐饮': `<section class="guide-section"><p class="guide-label">点餐策略</p><p>到店先确认排队时长、最后点单与付款方式。四人可优先分食招牌品，避免单点过多挤占下一段时间。</p></section><section class="guide-section"><p class="guide-label">预约失败时</p><p>等位超过预留时间时执行备选，不把用餐延误带入固定交通或酒店入住时段。</p></section>`,
-    '酒店': `<section class="guide-section"><p class="guide-label">入住动作</p><p>办理前确认行李寄存、入住和退房时限；房卡、房间分配和翌日出发时间由同行成员当场同步。</p></section><section class="guide-section"><p class="guide-label">离店检查</p><p>离店前检查插座、保险箱、浴室和床下；证件、药品和充电设备必须随身携带。</p></section>`,
-    '购物': `<section class="guide-section"><p class="guide-label">采购方法</p><p>先按清单购买难替代或易售罄商品，再选择补货。结账前确认免税、保冷、易碎品包装与行李重量。</p></section><section class="guide-section"><p class="guide-label">时间边界</p><p>商店营业时间与库存属于动态信息；接近闭店或下一项固定行程时立即收尾。</p></section>`,
-    '休整': `<section class="guide-section"><p class="guide-label">恢复节奏</p><p>补水、整理随身物品并确认次日闹钟。若当日已延误，优先休整而不是把非核心项目塞回晚上。</p></section><section class="guide-section"><p class="guide-label">同行协作</p><p>用这一时段同步照片、伴手礼、预约截图和第二天集合时间，避免在出发时再逐项确认。</p></section>`
-  };
-  return `${preflight}${byType[block.type] || byType['休整']}`;
+function dailyPreflightHtml() {
+  return `<aside class="daily-preflight"><p class="kicker">出发前再检查</p><p>交通班次、票价、营业时间、预约结果与天气。把变动直接写进对应行程卡，避免出发当天反复翻找不同来源。</p></aside>`;
 }
 function blockHtml(day, block) {
   const canEdit = Boolean(state.session);
@@ -170,17 +157,33 @@ function dailyHighlightsHtml(day) {
   const list = (items) => `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
   return `<section class="daily-highlights" aria-label="${escapeHtml(day.title)}的推荐"><article><p class="kicker">今日重点</p><h2>必打卡</h2>${list(highlights.must)}</article><article><p class="kicker">沿途补给</p><h2>美食推荐</h2>${list(highlights.food)}</article></section>`;
 }
+
+function selectedBlock(day = currentView()) {
+  if (!day?.blocks?.length) return null;
+  const routedBlock = currentBlock(day);
+  if (routedBlock) {
+    state.selectedBlockId = routedBlock.id;
+    return routedBlock;
+  }
+  const storedBlock = day.blocks.find((block) => block.id === state.selectedBlockId);
+  const nextBlock = storedBlock || day.blocks[0];
+  state.selectedBlockId = nextBlock.id;
+  return nextBlock;
+}
+
 function blockHtml(day, block) {
   const canEdit = Boolean(state.session);
-  const expanded = state.expandedId === block.id;
   const sequence = day.blocks.findIndex((item) => item.id === block.id) + 1;
-  const risk = block.riskOverride ? `<p class="risk-note critical"><strong>风险覆盖：</strong>${escapeHtml(block.riskOverride)}</p>` : block.risk ? `<p class="risk-note"><strong>风险：</strong>${escapeHtml(block.risk)}。备用：${escapeHtml(block.fallback || '现场确认')}</p>` : '';
-  return `<article class="itinerary-block ${expanded ? 'is-expanded' : ''}" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time"><span class="block-sequence">行程 ${String(sequence).padStart(2, '0')}</span><strong>${escapeHtml(block.start)}</strong><span class="block-time-end">至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><button class="block-toggle expand-card" data-id="${block.id}" aria-expanded="${expanded}" aria-controls="detail-${block.id}"><span><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></span><span class="expand-affordance">${expanded ? '收起' : '展开'}</span></button><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail" ${expanded ? '' : 'hidden'}>${transportDiagram(block)}<div class="detail-grid">${guideFor(day, block)}</div><p class="recommendation"><strong>本段提示</strong> ${escapeHtml(block.recommendation || '按当天开放与人流情况调整。')}</p>${risk}${photoStack(block)}</div></div></article>`;
+  const detailContent = `${transportDiagram(block)}${photoStack(block)}`;
+  return `<article class="itinerary-block is-current" id="${block.id}" draggable="${canEdit}" data-block-id="${block.id}"><div class="block-time"><span class="block-sequence">行程 ${String(sequence).padStart(2, '0')}</span><strong>${escapeHtml(block.start)}</strong><span class="block-time-end">至 ${escapeHtml(block.end)}</span></div><div class="block-body"><div class="block-heading"><div class="block-heading-copy"><h3>${escapeHtml(block.title)}</h3><p class="block-place">${escapeHtml(block.place)}</p></div><div class="block-actions"><span class="badge badge-${statusClass(block.status)}">${escapeHtml(block.status)}</span>${canEdit ? `<button class="icon-button edit-card" data-id="${block.id}" aria-label="编辑 ${escapeHtml(block.title)}">编辑</button>${block.fixed ? '' : `<button class="icon-button delete-card" data-id="${block.id}" aria-label="删除 ${escapeHtml(block.title)}">×</button>`}` : ''}</div></div><p class="block-summary">${escapeHtml(block.action)}</p><div id="detail-${block.id}" class="block-detail${detailContent ? '' : ' block-detail-empty'}">${detailContent}</div></div></article>`;
 }
 function dayHtml(day) {
   const index = state.data.days.indexOf(day) + 1;
   const focused = currentBlock(day);
-  const timeline = day.blocks.map((block) => `<a href="#${day.id}/${block.id}" class="${focused?.id === block.id ? 'active' : ''}"><strong>${escapeHtml(block.start)}</strong>${escapeHtml(block.title)}</a>`).join('');
+  const timeline = day.blocks.map((block, stepIndex) => {
+    const isActive = focused?.id === block.id;
+    return `<a href="#${day.id}/${block.id}" class="timeline-step ${isActive ? 'active' : ''} ${stepIndex === day.blocks.length - 1 ? 'is-last' : ''}" ${isActive ? 'aria-current="step"' : ''} style="--timeline-index:${stepIndex}"><span class="timeline-step-node" aria-hidden="true"></span><span class="timeline-step-copy"><strong class="timeline-step-time">${escapeHtml(block.start)}</strong><span class="timeline-step-title">${escapeHtml(block.title)}</span></span></a>`;
+  }).join('');
   const mapTitle = focused ? `定位：${escapeHtml(focused.title)}` : '当日点位';
   const mapDescription = focused ? `地图已跟随时间轴定位到 ${escapeHtml(focused.place)}。` : '点击时间轴会切换地图焦点；按卡片顺序查看当天路线。';
   return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section><section class="day-layout"><div class="timeline-panel"><div class="panel-title"><h2>当天时间轴</h2>${state.session ? '<span class="badge badge-confirmed">可拖拽排序</span>' : ''}</div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div><aside class="map-card">${mapHtml(day)}<div class="map-card-copy"><h2>${mapTitle}</h2><p>${mapDescription}</p><a href="${mapLink(day, focused)}" target="_blank" rel="noopener">打开 Google Maps</a></div></aside></section><section class="itinerary"><div class="itinerary-title"><div><p class="kicker">完整章节</p><h2>时间留白，路线清楚</h2></div><p>${escapeHtml(day.hotel)}</p></div><div class="block-list" data-day-id="${day.id}">${day.blocks.map((block) => blockHtml(day, block)).join('')}</div></section>`;
@@ -234,16 +237,19 @@ document.addEventListener('dragstart', (event) => event.preventDefault());
 // 移动端把地图入口放在正文之后：旅途中先看下一步怎么走，再按需打开地图。
 function dayHtml(day) {
   const index = state.data.days.indexOf(day) + 1;
-  const focused = currentBlock(day);
-  const timeline = day.blocks.map((block) => `<a href="#${day.id}/${block.id}" class="${focused?.id === block.id ? 'active' : ''}"><strong>${escapeHtml(block.start)}</strong>${escapeHtml(block.title)}</a>`).join('');
-  const mapTitle = focused ? `定位：${escapeHtml(focused.title)}` : '当日点位';
-  const mapDescription = focused ? `地图已跟随时间轴定位到 ${escapeHtml(focused.place)}。` : '按卡片顺序查看当天路线。';
-  const mapCard = `<aside class="map-card">${mapHtml(day)}<div class="map-card-copy"><h2>${mapTitle}</h2><p>${mapDescription}</p><a href="${mapLink(day, focused)}" target="_blank" rel="noopener">打开 Google Maps</a></div></aside>`;
-  return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section>${dailyHighlightsHtml(day)}<section class="day-layout"><div class="timeline-panel"><div class="panel-title"><h2>当天时间轴</h2></div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div>${mapCard}</section><section class="itinerary"><div class="itinerary-title"><div><p class="kicker">完整章节</p><h2>时间留白，路线清楚</h2></div><p>${escapeHtml(day.hotel)}</p></div><div class="block-list" data-day-id="${day.id}">${day.blocks.map((block) => blockHtml(day, block)).join('')}</div></section>`;
+  const focused = selectedBlock(day);
+  const timeline = day.blocks.map((block, stepIndex) => {
+    const isActive = focused?.id === block.id;
+    return `<a href="#${day.id}/${block.id}" class="timeline-step ${isActive ? 'active' : ''} ${stepIndex === day.blocks.length - 1 ? 'is-last' : ''}" ${isActive ? 'aria-current="step"' : ''} style="--timeline-index:${stepIndex}"><span class="timeline-step-node" aria-hidden="true"></span><span class="timeline-step-copy"><strong class="timeline-step-time">${escapeHtml(block.start)}</strong><span class="timeline-step-title">${escapeHtml(block.title)}</span></span></a>`;
+  }).join('');
+  const mapTitle = `定位：${escapeHtml(focused.title)}`;
+  const mapDescription = `地图已跟随时间轴定位到 ${escapeHtml(focused.place)}。`;
+  const mapCard = `<section class="day-map-bottom"><aside class="map-card">${mapHtml(day, focused)}<div class="map-card-copy"><h2>${mapTitle}</h2><p>${mapDescription}</p><a href="${mapLink(day, focused)}" target="_blank" rel="noopener">打开 Google Maps</a></div></aside></section>`;
+  return `<section class="day-header" style="background-image:linear-gradient(90deg,rgba(9,38,42,.93),rgba(9,38,42,.60)),url('${escapeHtml(day.image)}');background-position:center;background-size:cover"><div><p class="kicker">DAY ${String(index).padStart(2, '0')} · ${formatDate(day.date)} ${escapeHtml(day.weekday)}</p><h1>${escapeHtml(day.title)}</h1><p>${escapeHtml(day.theme)}</p><p class="image-credit">图片：${escapeHtml(day.imageSource)} · 正式发布前请逐张复核使用范围</p></div></section>${dailyHighlightsHtml(day)}<section class="day-flow"><div class="timeline-panel ${day.blocks.length > 7 ? 'timeline-panel-wide' : ''}"><div class="panel-title"><h2>当天时间轴</h2></div><nav class="timeline" aria-label="当天行程时间轴">${timeline}</nav></div></section><section class="itinerary itinerary-single"><div class="itinerary-title"><div><p class="kicker">当前行程</p><h2>时间留白，路线清楚</h2></div><p>${escapeHtml(day.hotel)}</p></div>${dailyPreflightHtml()}<div class="block-list" data-day-id="${day.id}">${blockHtml(day, focused)}</div></section>${mapCard}`;
 }
 
-// 公开版仅保留阅读与章节展开；旧的协作代码保留在文件中以兼容既有数据，
-// 但不再绑定任何编辑、删除、排序或历史恢复入口。
+// 公开版使用单卡阅读流；旧的协作代码保留在文件中以兼容既有数据，
+// 但不再绑定任何章节展开、删除、排序或历史恢复入口。
 function bindDynamicEvents() {
   document.querySelector('#mobile-preview').onclick = () => {
     const dialog = document.querySelector('#phone-preview-dialog');
@@ -388,9 +394,47 @@ function bindDynamicEvents() {
   document.querySelectorAll('.timeline a').forEach((link) => {
     link.onclick = (event) => {
       event.preventDefault();
-      navigateToHash(link.getAttribute('href'), { scrollToBlock: true });
+      navigateToHash(link.getAttribute('href'));
     };
   });
+  const timeline = document.querySelector('.timeline');
+  if (timeline) {
+    let timelineStartX = 0;
+    let timelineStartScroll = 0;
+    let timelineDragged = false;
+    timeline.addEventListener('wheel', (event) => {
+      if (timeline.scrollWidth <= timeline.clientWidth || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      timeline.scrollLeft += event.deltaY;
+    }, { passive: false });
+    timeline.addEventListener('pointerdown', (event) => {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      timelineStartX = event.clientX;
+      timelineStartScroll = timeline.scrollLeft;
+      timelineDragged = false;
+      timeline.classList.add('timeline-is-dragging');
+      timeline.setPointerCapture(event.pointerId);
+    });
+    timeline.addEventListener('pointermove', (event) => {
+      if (!timeline.classList.contains('timeline-is-dragging')) return;
+      const distance = event.clientX - timelineStartX;
+      if (Math.abs(distance) > 5) timelineDragged = true;
+      timeline.scrollLeft = timelineStartScroll - distance;
+    });
+    const stopTimelineDrag = () => {
+      if (!timeline.classList.contains('timeline-is-dragging')) return;
+      timeline.classList.remove('timeline-is-dragging');
+      if (timelineDragged) setTimeout(() => { timelineDragged = false; }, 0);
+    };
+    timeline.addEventListener('pointerup', stopTimelineDrag);
+    timeline.addEventListener('pointercancel', stopTimelineDrag);
+    timeline.addEventListener('click', (event) => {
+      if (!timelineDragged) return;
+      event.preventDefault();
+      event.stopPropagation();
+      timelineDragged = false;
+    }, true);
+  }
   const dayNav = document.querySelector('.day-nav');
   if (dayNav) {
     let startX = 0;
@@ -460,14 +504,6 @@ function bindDynamicEvents() {
       pageDragged = false;
     }, true);
   }
-  document.querySelectorAll('.expand-card').forEach((button) => {
-    button.onclick = () => {
-      const id = button.dataset.id;
-      const expanded = button.getAttribute('aria-expanded') === 'true';
-      state.expandedId = expanded ? null : id;
-      render({ preserveScroll: true });
-    };
-  });
 }
 
 function centerActiveDayNav() {
@@ -478,12 +514,21 @@ function centerActiveDayNav() {
   dayNav.scrollLeft = Math.max(0, targetLeft);
 }
 
+function centerActiveTimelineStep({ behavior = 'auto' } = {}) {
+  const timeline = document.querySelector('.timeline');
+  const activeStep = timeline?.querySelector('.timeline-step.active');
+  if (!timeline || !activeStep || timeline.scrollWidth <= timeline.clientWidth) return;
+  const targetLeft = activeStep.offsetLeft - (timeline.clientWidth - activeStep.offsetWidth) / 2;
+  timeline.scrollTo({ left: Math.max(0, targetLeft), behavior });
+}
+
 function render({ preserveScroll = false, scrollToBlockId = null, resetScroll = false } = {}) {
   const previousScroll = preserveScroll ? window.scrollY : null;
   const view = isTransitView() ? transitHtml() : currentView() ? dayHtml(currentView()) : overviewHtml();
   app.innerHTML = `<div class="app-shell">${navHtml()}<section class="page-content">${view}</section></div>`;
   centerActiveDayNav();
   bindDynamicEvents();
+  requestAnimationFrame(() => centerActiveTimelineStep({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   if (resetScroll) window.scrollTo({ top: 0, behavior: 'auto' });
   if (previousScroll !== null) window.scrollTo({ top: previousScroll, behavior: 'auto' });
   if (scrollToBlockId) requestAnimationFrame(() => document.getElementById(scrollToBlockId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -511,14 +556,14 @@ function navigateToHash(hash, { scrollToBlock = false } = {}) {
   if (location.hash !== hash) history.pushState(null, '', hash);
   preloadDayPhotos(routeParts()[0]);
   const routedBlock = currentBlock();
-  state.expandedId = routedBlock?.id || null;
+  state.selectedBlockId = routedBlock?.id || null;
   render({ resetScroll: !scrollToBlock, scrollToBlockId: scrollToBlock ? routedBlock?.id : null });
 }
 
 window.addEventListener('hashchange', () => {
   const routedBlock = currentBlock();
-  state.expandedId = routedBlock?.id || null;
-  render({ scrollToBlockId: routedBlock?.id || null, resetScroll: !routedBlock });
+  state.selectedBlockId = routedBlock?.id || null;
+  render({ resetScroll: !routedBlock });
 });
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
   const updates = new EventSource('/api/events');

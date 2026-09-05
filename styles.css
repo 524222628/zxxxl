@@ -138,8 +138,11 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.68;text-rendering
 /* 地点是定位信息，行动提示则以低饱和强调线区分。 */
 .block-place{color:#62777b;font-weight:600;letter-spacing:.01em}
 .block-summary{padding-left:10px;border-left:2px solid #9cc5b2;color:#3e6864;font-weight:520}
+.itinerary-block:not(.is-expanded) .block-summary{display:none}
+.block-detail-empty{display:none!important}
+.daily-preflight{margin:0 0 14px;padding:11px 13px;border-left:3px solid var(--accent);background:rgba(255,255,255,.48);color:#526d70;font-size:13px;line-height:1.6}.daily-preflight .kicker{margin:0 0 3px;font-size:10px}.daily-preflight p:last-child{margin:0}
 .route-stop b{display:grid;gap:2px}.route-stop b>span{font-weight:800}.route-stop b small{color:#637a79;font-size:10px;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
-@media(max-width:720px){.block-summary{font-size:14px}.route-stop b small{font-size:9px}.route-stop{min-width:104px}}
+@media(max-width:720px){.block-summary{font-size:14px}.daily-preflight{margin-bottom:11px;padding:10px 11px;font-size:13px}.route-stop b small{font-size:9px}.route-stop{min-width:104px}}
 
 /* 仅在已有实拍的行程章节显示照片；不再保留通用的空白图片素材位。 */
 .block-detail::after{content:none;display:none}
@@ -162,3 +165,43 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.68;text-rendering
 
 /* 图库先显示轻量预览，原图完成后无感替换。 */
 .photo-gallery-stage img{transition:opacity .16s ease,filter .16s ease}.photo-gallery-stage img.is-loading-original{filter:blur(.45px);opacity:.92}
+
+/* 当天节点改为一条可阅读的行程线。箭头只表达前进方向，避免额外装饰。 */
+.timeline{display:flex;gap:0;overflow:visible;padding:5px 2px 10px}.timeline-step{position:relative;display:grid;grid-template-rows:18px auto;flex:1 1 0;min-width:0;min-height:78px;padding:0 10px 8px 0;border:0!important;border-radius:0!important;background:transparent!important;color:#597174;text-decoration:none;line-height:1.4;scroll-snap-align:start}.timeline-step-node{position:relative;z-index:1;display:block;width:12px;height:12px;border:3px solid #7a9d91;border-radius:50%;background:var(--paper);transform:translateZ(0)}.timeline-step:not(.is-last)::after{content:"";position:absolute;z-index:0;top:10px;left:12px;right:0;height:1px;background:#b9cec5}.timeline-step:not(.is-last)::before{content:"";position:absolute;z-index:0;top:7px;right:0;width:6px;height:6px;border-top:1px solid #8caea1;border-right:1px solid #8caea1;transform:rotate(45deg)}.timeline-step-copy{display:grid;gap:3px;padding-top:5px;overflow-wrap:anywhere}.timeline-step strong{color:var(--evergreen);font-size:15px;line-height:1.1}.timeline-step-copy>span{font-size:12px;font-weight:650}.timeline-step.active{color:var(--accent-deep)}.timeline-step.active .timeline-step-node{border-color:var(--accent);background:var(--accent);transform:scale(1.28)}.timeline-step.active .timeline-step-copy strong{color:var(--accent-deep)}.timeline-step.active .timeline-step-copy>span{font-weight:800}.timeline-step:focus-visible{z-index:2;outline:3px solid rgba(216,92,64,.32);outline-offset:3px}.timeline-step:hover .timeline-step-node{transform:scale(1.14)}
+.timeline-panel-wide{grid-column:1 / -1}.timeline-panel-wide + .map-card{grid-column:1 / -1;display:grid;grid-template-columns:minmax(280px,.5fr) minmax(0,1fr)}.timeline-panel-wide + .map-card .map-panel{height:100%}
+@media(prefers-reduced-motion:no-preference){.timeline-step-node,.timeline-step-copy{transition:transform .2s cubic-bezier(.16,1,.3,1),opacity .2s ease}.timeline-step{animation:timeline-step-in .2s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--timeline-index) * 35ms)}@keyframes timeline-step-in{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}}
+@media(max-width:720px){.timeline{display:flex;gap:0;overflow-x:auto;overflow-y:hidden;padding:5px 14px 10px 2px;scroll-snap-type:x proximity;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}.timeline::-webkit-scrollbar{display:none}.timeline.timeline-is-dragging{cursor:grabbing;scroll-snap-type:none}.timeline-step{flex:0 0 150px;min-width:150px;min-height:84px;padding-right:10px}.timeline-step-copy>span{font-size:12px}.timeline-step strong{font-size:16px}.timeline-panel-wide,.timeline-panel-wide + .map-card{display:block;grid-column:auto}.timeline-panel-wide + .map-card .map-panel{height:220px}}
+@media(prefers-reduced-motion:reduce){.timeline-step,.timeline-step-node,.timeline-step-copy{animation:none!important;transition:none!important}}
+
+/* 时间轴升级为“路线仪表盘”：焦点在中部，选中项以一张克制的执行标签浮起。 */
+.timeline-panel{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(242,247,244,.86));box-shadow:0 10px 26px rgba(18,60,66,.06)}
+.timeline-panel::after{content:"";position:absolute;right:-38px;bottom:-68px;width:154px;height:154px;border:1px solid rgba(43,125,120,.13);border-radius:50%;pointer-events:none}
+.timeline-panel .panel-title{position:relative;z-index:1;padding-bottom:11px;margin-bottom:8px;border-bottom:1px solid rgba(91,130,120,.18)}
+.timeline-panel .panel-title h2{display:flex;align-items:center;gap:8px;font-size:16px;letter-spacing:-.02em}
+.timeline-panel .panel-title h2::before{content:"";display:block;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(216,92,64,.13)}
+.timeline.timeline{position:relative;z-index:1;display:flex;align-items:stretch;gap:0;overflow-x:auto;overflow-y:hidden;padding:15px 8px 17px 2px;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;overscroll-behavior-x:contain}
+.timeline.timeline::-webkit-scrollbar{display:none}
+.timeline .timeline-step{display:grid;grid-template-rows:20px auto;align-content:start;flex:1 1 0;min-width:0;min-height:101px;padding:0 12px 10px 0;border:0!important;border-radius:11px!important;background:transparent!important;color:#597174;scroll-snap-align:center;transition:transform .2s cubic-bezier(.16,1,.3,1),opacity .2s ease,box-shadow .2s ease}
+.timeline .timeline-step-node{width:13px;height:13px;border:3px solid #76998e;background:#f8faf7;box-shadow:0 0 0 4px rgba(118,153,142,.1)}
+.timeline .timeline-step:not(.is-last)::after{top:11px;left:13px;right:0;height:2px;background:linear-gradient(90deg,#7fa194 0%,#b8d0c7 58%,#d9e6e1 100%);border-radius:999px}
+.timeline .timeline-step:not(.is-last)::before{content:"";top:8px;right:3px;width:8px;height:8px;border:2px solid #8aa99e;border-width:0 2px 2px 0;border-radius:0 0 3px 0;transform:rotate(-45deg);background:transparent}
+.timeline .timeline-step-copy{gap:4px;padding:7px 8px 4px 0}
+.timeline .timeline-step-time{color:#315e59;font-size:15px;font-weight:800;letter-spacing:-.025em}
+.timeline .timeline-step-title{display:-webkit-box;overflow:hidden;color:#60777a;font-size:12px;font-weight:650;line-height:1.42;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.timeline-step-current{display:none}
+.timeline .timeline-step:hover{transform:translateY(-2px)}
+.timeline .timeline-step:hover .timeline-step-node{transform:scale(1.1)}
+.timeline .timeline-step.active{z-index:2;min-height:111px;margin-top:0;padding:0 12px 10px 0;border:0!important;background:transparent!important;box-shadow:none;color:var(--accent-deep);transform:none}
+.timeline .timeline-step.active .timeline-step-node{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 5px rgba(216,92,64,.16);transform:scale(1.24)}
+.timeline .timeline-step.active .timeline-step-copy{margin:7px 0 0 1px;padding:8px 9px 7px;border-left:3px solid var(--accent);border-radius:0 9px 9px 0;background:#fff8f4;box-shadow:0 7px 15px rgba(94,50,38,.1)}
+.timeline .timeline-step.active .timeline-step-time{color:var(--accent-deep);font-size:18px;font-weight:850;letter-spacing:-.055em;line-height:1}
+.timeline .timeline-step.active .timeline-step-title{color:#673d34;font-size:13px;font-weight:820;line-height:1.35}
+.timeline .timeline-step-current{display:none}
+.timeline .timeline-step:focus-visible{outline:3px solid rgba(216,92,64,.35);outline-offset:3px}
+.timeline-panel-wide .timeline .timeline-step{flex:0 0 clamp(128px,13vw,164px);min-width:128px}
+@media(max-width:720px){.timeline-panel{padding:15px 12px 10px!important;border-radius:12px}.timeline-panel .panel-title{padding:0 2px 10px;margin-bottom:5px}.timeline.timeline{padding:14px 16px 16px 2px;scroll-padding-inline:calc(50% - 75px);touch-action:pan-x}.timeline .timeline-step{flex:0 0 150px;min-width:150px;min-height:102px;padding-right:12px}.timeline .timeline-step.active{flex-basis:156px;min-height:112px;margin-top:0;padding:0 12px 10px 0}.timeline .timeline-step-title{font-size:12px}.timeline .timeline-step.active .timeline-step-time{font-size:18px}.timeline-panel-wide .timeline .timeline-step{flex-basis:156px;min-width:156px}}
+@media(prefers-reduced-motion:reduce){.timeline.timeline{scroll-behavior:auto}.timeline .timeline-step{transition:none!important}.timeline .timeline-step:hover,.timeline .timeline-step.active{transform:none}}
+
+/* 单卡阅读流：时间轴选择一段完整行程，地图收至每日内容末尾。 */
+.day-flow{margin-top:18px}.day-flow .timeline-panel{width:100%}.itinerary-single{margin-top:18px}.itinerary-single .block-list{display:block}.itinerary-single .itinerary-block{width:100%;min-height:0}.itinerary-block.is-current{border-color:#9ec5b5;background:#f3faf6;box-shadow:0 12px 28px rgba(38,83,72,.09)}.itinerary-block.is-current .block-summary{display:block}.itinerary-block.is-current .block-detail{display:block;margin-top:16px;padding-top:16px;border-top:1px solid #c7ddd2}.block-heading-copy{min-width:0}.day-map-bottom{margin-top:18px}.day-map-bottom .map-card{display:block;width:100%}.day-map-bottom .map-card .map-panel{height:330px}.day-map-bottom .map-card-copy{padding:17px 18px}
+@media(max-width:720px){.day-flow{margin-top:12px}.itinerary-single{margin-top:16px}.itinerary-single .itinerary-title{margin-bottom:12px}.itinerary-block.is-current{padding:15px}.itinerary-block.is-current .block-detail{margin-top:14px;padding-top:14px}.day-map-bottom{margin-top:16px}.day-map-bottom .map-card .map-panel{height:220px}.day-map-bottom .map-card-copy{padding:15px 14px}}

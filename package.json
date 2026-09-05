@@ -5,6 +5,7 @@
   "description": "2026 日本关西之旅互动协作行程",
   "scripts": {
     "start": "node server.js",
+    "android:open": "powershell -ExecutionPolicy Bypass -File scripts/open-android-preview.ps1",
     "test": "node --test test/*.test.js"
   }
 }
